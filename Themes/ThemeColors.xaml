@@ -1,0 +1,32 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ============================================ -->
+    <!-- VinTed Color Palette — Light Theme           -->
+    <!-- Tập trung toàn bộ màu sắc để đồng bộ UI     -->
+    <!-- ============================================ -->
+
+    <!-- Background -->
+    <SolidColorBrush x:Key="VtBgPrimary" Color="#F2F2F2"/>
+    <SolidColorBrush x:Key="VtBgSecondary" Color="#F0F0F0"/>
+    <SolidColorBrush x:Key="VtBgCard" Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="VtBorderLight" Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="VtBorderMedium" Color="#CCCCCC"/>
+
+    <!-- Foreground / Text -->
+    <SolidColorBrush x:Key="VtFgPrimary" Color="#1A1A1A"/>
+    <SolidColorBrush x:Key="VtFgSecondary" Color="#5D5D5D"/>
+    <SolidColorBrush x:Key="VtFgMuted" Color="#8A8A8A"/>
+    <SolidColorBrush x:Key="VtFgOnAccent" Color="#FFFFFF"/>
+
+    <!-- Accent Colors -->
+    <SolidColorBrush x:Key="VtAccentPrimary" Color="#005DA6"/>
+    <SolidColorBrush x:Key="VtAccentPrimaryHover" Color="#0070C9"/>
+    <SolidColorBrush x:Key="VtAccentSuccess" Color="#0E7A4F"/>
+    <SolidColorBrush x:Key="VtAccentSuccessHover" Color="#109D63"/>
+    <SolidColorBrush x:Key="VtAccentWarning" Color="#C27022"/>
+    <SolidColorBrush x:Key="VtAccentWarningHover" Color="#D98530"/>
+    <SolidColorBrush x:Key="VtAccentDanger" Color="#C42B1C"/>
+    <SolidColorBrush x:Key="VtAccentDangerHover" Color="#E03425"/>
+
+</ResourceDictionary>

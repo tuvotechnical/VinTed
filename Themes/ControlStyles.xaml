@@ -1,0 +1,118 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Merge ThemeColors để StaticResource có thể resolve tại parse-time -->
+    <ResourceDictionary.MergedDictionaries>
+        <ResourceDictionary Source="/VinTed;component/Themes/ThemeColors.xaml"/>
+    </ResourceDictionary.MergedDictionaries>
+
+    <!-- ============================================ -->
+    <!-- VinTed Control Styles — Shared across all UI -->
+    <!-- BasedOn ModernWpf default styles             -->
+    <!-- ============================================ -->
+
+    <!-- Section Label (TÌM KIẾM, THAY THẾ...) -->
+    <Style x:Key="VtSectionLabel" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource VtFgSecondary}"/>
+        <Setter Property="FontSize" Value="11"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="Margin" Value="1,0,0,6"/>
+    </Style>
+
+    <!-- Status Bar Text -->
+    <Style x:Key="VtStatusText" TargetType="TextBlock">
+        <Setter Property="Foreground" Value="{StaticResource VtFgSecondary}"/>
+        <Setter Property="FontSize" Value="11.5"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="VerticalAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Primary Action Button (Find Next) -->
+    <Style x:Key="VtBtnPrimary" TargetType="Button">
+        <Setter Property="Background" Value="{StaticResource VtAccentPrimary}"/>
+        <Setter Property="Foreground" Value="{StaticResource VtFgOnAccent}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="FontFamily" Value="Segoe UI"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Padding" Value="0,10"/>
+        <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                            CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background"
+                                    Value="{StaticResource VtAccentPrimaryHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.85"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Success Action Button (Replace) -->
+    <Style x:Key="VtBtnSuccess" TargetType="Button" BasedOn="{StaticResource VtBtnPrimary}">
+        <Setter Property="Background" Value="{StaticResource VtAccentSuccess}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                            CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background"
+                                    Value="{StaticResource VtAccentSuccessHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.85"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Warning Action Button (Replace All) -->
+    <Style x:Key="VtBtnWarning" TargetType="Button" BasedOn="{StaticResource VtBtnPrimary}">
+        <Setter Property="Background" Value="{StaticResource VtAccentWarning}"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" Background="{TemplateBinding Background}"
+                            CornerRadius="4" Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background"
+                                    Value="{StaticResource VtAccentWarningHover}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.85"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <!-- Status Bar Container -->
+    <Style x:Key="VtStatusBar" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource VtBgSecondary}"/>
+        <Setter Property="BorderBrush" Value="{StaticResource VtBorderLight}"/>
+        <Setter Property="BorderThickness" Value="0,1,0,0"/>
+        <Setter Property="Padding" Value="24,10"/>
+    </Style>
+
+</ResourceDictionary>

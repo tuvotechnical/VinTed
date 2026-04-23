@@ -1,0 +1,98 @@
+﻿Imports Inventor
+
+Sub Main()
+    ' Đảm bảo chỉ chạy trong môi trường bản vẽ
+    If ThisApplication.ActiveDocumentType <> DocumentTypeEnum.kDrawingDocumentObject Then
+        MsgBox("Lệnh này chỉ hoạt động trong môi trường Drawing (.idw / .dwg).", vbCritical, "Cảnh báo")
+        Exit Sub
+    End If
+
+    ' BƯỚC 1: Lựa chọn mẫu thông qua Cạnh
+    Dim oSourceHatch As DrawingViewHatchRegion = PickHatchByCurve("BƯỚC 1: Chọn MỘT CẠNH của chi tiết MẪU (Source)")
+    If oSourceHatch Is Nothing Then Exit Sub 
+
+    ' Lấy thông số từ mặt cắt mẫu
+    Dim oPattern As DrawingHatchPattern = oSourceHatch.Pattern
+    Dim dScale As Double = oSourceHatch.Scale
+    Dim dAngle As Double = oSourceHatch.Angle
+    Dim oColor As Color = oSourceHatch.Color
+
+    ' BƯỚC 2: Vòng lặp liên tục để chọn đích thông qua Cạnh
+    Dim bKeepGoing As Boolean = True
+    While bKeepGoing
+        Dim oTargetHatch As DrawingViewHatchRegion = PickHatchByCurve("BƯỚC 2: Chọn MỘT CẠNH của chi tiết ĐÍCH (Nhấn ESC để thoát)")
+        
+        If oTargetHatch Is Nothing Then
+            bKeepGoing = False ' Người dùng ấn ESC
+        Else
+            Try
+                ' Bắt buộc tắt Hatch By Material
+                oTargetHatch.ByMaterial = False
+                
+                ' Ép thông số từ mẫu sang đích
+                oTargetHatch.Pattern = oPattern
+                oTargetHatch.Scale = dScale
+                oTargetHatch.Angle = dAngle
+                
+                If Not oColor Is Nothing Then oTargetHatch.Color = oColor
+            Catch ex As Exception
+                MsgBox("Lỗi khi áp dụng pattern: " & ex.Message, vbCritical, "Lỗi thực thi")
+            End Try
+        End If
+    End While
+
+    ' Cập nhật bản vẽ
+    ThisApplication.ActiveDocument.Update()
+End Sub
+
+' Hàm xử lý việc truy xuất Hatch từ thao tác click vào Cạnh
+Function PickHatchByCurve(prompt As String) As DrawingViewHatchRegion
+    Dim oCmdMgr As CommandManager = ThisApplication.CommandManager
+    ' Bắt buộc lọc chỉ cho phép chọn Cạnh (Curve) trong bản vẽ
+    Dim oObj As Object = oCmdMgr.Pick(SelectionFilterEnum.kDrawingCurveSegmentFilter, prompt)
+    If oObj Is Nothing Then Return Nothing
+    
+    Dim oSegment As DrawingCurveSegment = oObj
+    Dim oCurve As DrawingCurve = oSegment.Parent
+    Dim oView As DrawingView = oCurve.Parent
+    
+    Dim oSurfaceBody As SurfaceBody = Nothing
+    Try
+        ' Truy xuất khối 3D (SurfaceBody) từ đoạn thẳng vừa click
+        Dim oModelGeom As Object = oCurve.ModelGeometry
+        If TypeOf oModelGeom Is Edge Then
+            oSurfaceBody = oModelGeom.Parent.Parent ' Edge -> Face -> SurfaceBody
+        ElseIf TypeOf oModelGeom Is Face Then
+            oSurfaceBody = oModelGeom.Parent
+        ElseIf TypeOf oModelGeom Is SurfaceBody Then
+            oSurfaceBody = oModelGeom
+        End If
+    Catch ex As Exception
+        MsgBox("Không thể phân tích khối 3D từ đối tượng này. Vui lòng chọn một cạnh biên rõ ràng hơn.", vbExclamation, "Lỗi")
+        Return Nothing
+    End Try
+
+    If oSurfaceBody Is Nothing Then 
+        MsgBox("Không tìm thấy khối vật thể liên kết với cạnh này.", vbExclamation)
+        Return Nothing
+    End If
+
+    Dim oHatchRegions As Object
+    Try
+        ' Thuộc tính HatchRegions chỉ khả dụng từ Inventor 2022 trở đi
+        oHatchRegions = oView.HatchRegions 
+    Catch ex As Exception
+        MsgBox("Lỗi: Phiên bản Inventor của bạn có thể cũ hơn bản 2022. API chưa hỗ trợ tính năng này.", vbCritical, "Giới hạn API")
+        Return Nothing
+    End Try
+
+    ' Duyệt qua toàn bộ mặt cắt trong hình cắt để tìm cái khớp với khối 3D
+    For Each oHatch As DrawingViewHatchRegion In oHatchRegions
+        If oHatch.SurfaceBody Is oSurfaceBody Then
+            Return oHatch ' Tìm thấy mặt cắt đích xác
+        End If
+    Next
+    
+    MsgBox("Không tìm thấy mặt cắt (Hatch) nào khớp với chi tiết bạn vừa click. Đảm bảo bạn đang chọn cạnh thuộc hình cắt (Section View).", vbExclamation, "Không tìm thấy")
+    Return Nothing
+End Function

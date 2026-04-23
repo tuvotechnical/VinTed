@@ -1,0 +1,250 @@
+﻿AddReference "System.Drawing"
+AddReference "System.Windows.Forms"
+
+Sub Main()
+    Dim oDoc As Document = ThisApplication.ActiveDocument
+    If oDoc.DocumentType <> DocumentTypeEnum.kDrawingDocumentObject Then
+        MessageBox.Show("Rule này chỉ chạy trong môi trường bản vẽ (.idw / .dwg của Inventor).", "Lỗi")
+        Exit Sub
+    End If
+
+    ' Gọi giao diện Form
+    Dim frm As New FindReplaceUI(ThisApplication, DirectCast(oDoc, DrawingDocument))
+    frm.Show() 
+End Sub
+
+' Class lưu trữ thông tin đối tượng tìm được
+Class FoundText
+    Public SheetObj As Sheet
+    Public ParentObj As Object
+    Public TBox As Inventor.TextBox 
+    Public ObjType As String
+End Class
+
+' Class vẽ Giao diện (UI) và xử lý Logic
+Class FindReplaceUI
+    Inherits System.Windows.Forms.Form
+
+    Private invApp As Inventor.Application
+    Private drawDoc As DrawingDocument
+    Private txtFind As System.Windows.Forms.TextBox
+    Private txtReplace As System.Windows.Forms.TextBox
+    Private btnFind As System.Windows.Forms.Button
+    Private btnReplace As System.Windows.Forms.Button
+    Private btnReplaceAll As System.Windows.Forms.Button
+    Private lblStatus As System.Windows.Forms.Label
+    
+    Private searchResults As New System.Collections.Generic.List(Of FoundText)
+    Private currentIndex As Integer = -1
+    Private lastSearchTerm As String = ""
+
+    Public Sub New(app As Inventor.Application, doc As DrawingDocument)
+        invApp = app
+        drawDoc = doc
+        InitializeComponent()
+    End Sub
+
+    Private Sub InitializeComponent()
+        Me.Text = "Find & Replace Text Pro (Fix Case & Space)"
+        Me.Width = 350
+        Me.Height = 200
+        Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow
+        Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
+        Me.TopMost = True 
+
+        Dim lblFind As New System.Windows.Forms.Label() With {.Text = "Find (*=space):", .Left = 10, .Top = 15, .Width = 100}
+        txtFind = New System.Windows.Forms.TextBox() With {.Left = 110, .Top = 12, .Width = 210}
+        
+        Dim lblReplace As New System.Windows.Forms.Label() With {.Text = "Replace (*=space):", .Left = 10, .Top = 45, .Width = 100}
+        txtReplace = New System.Windows.Forms.TextBox() With {.Left = 110, .Top = 42, .Width = 210}
+
+        btnFind = New System.Windows.Forms.Button() With {.Text = "Find Next", .Left = 10, .Top = 80, .Width = 90}
+        AddHandler btnFind.Click, AddressOf btnFind_Click
+
+        btnReplace = New System.Windows.Forms.Button() With {.Text = "Replace", .Left = 110, .Top = 80, .Width = 90}
+        AddHandler btnReplace.Click, AddressOf btnReplace_Click
+
+        btnReplaceAll = New System.Windows.Forms.Button() With {.Text = "Replace All", .Left = 210, .Top = 80, .Width = 110}
+        AddHandler btnReplaceAll.Click, AddressOf btnReplaceAll_Click
+        
+        lblStatus = New System.Windows.Forms.Label() With {.Text = "Gõ * thay cho dấu cách", .Left = 10, .Top = 115, .Width = 310, .ForeColor = System.Drawing.Color.Blue}
+        
+        Dim lblNote As New System.Windows.Forms.Label() With {.Text = "Note: Tìm kiếm không phân biệt hoa thường.", .Left = 10, .Top = 135, .Width = 310, .Font = New System.Drawing.Font("Arial", 7)}
+
+        Me.Controls.Add(lblFind)
+        Me.Controls.Add(txtFind)
+        Me.Controls.Add(lblReplace)
+        Me.Controls.Add(txtReplace)
+        Me.Controls.Add(btnFind)
+        Me.Controls.Add(btnReplace)
+        Me.Controls.Add(btnReplaceAll)
+        Me.Controls.Add(lblStatus)
+        Me.Controls.Add(lblNote)
+    End Sub
+
+    ' Hàm hỗ trợ chuẩn hóa chuỗi (Thay * thành space)
+    Private Function CleanStr(s As String) As String
+        Return s.Replace("*", " ")
+    End Function
+
+    ' Kiểm tra tồn tại không phân biệt hoa thường
+    Private Function IsMatch(source As String, target As String) As Boolean
+        If String.IsNullOrEmpty(source) Or String.IsNullOrEmpty(target) Then Return False
+        Return source.IndexOf(target, System.StringComparison.OrdinalIgnoreCase) >= 0
+    End Function
+
+    ' Thuật toán quét
+    Private Sub ScanDocument()
+        searchResults.Clear()
+        Dim findStr As String = CleanStr(txtFind.Text)
+        If findStr = "" Then Return
+
+        For Each oSheet As Sheet In drawDoc.Sheets
+            ' 1. General Notes
+            For Each oNote As GeneralNote In oSheet.DrawingNotes.GeneralNotes
+                If IsMatch(oNote.Text, findStr) Then
+                    searchResults.Add(New FoundText With {.SheetObj = oSheet, .ParentObj = oNote, .ObjType = "GeneralNote"})
+                End If
+            Next
+            
+            ' 2. Leader Notes
+            For Each oLeader As LeaderNote In oSheet.DrawingNotes.LeaderNotes
+                If IsMatch(oLeader.Text, findStr) Then
+                    searchResults.Add(New FoundText With {.SheetObj = oSheet, .ParentObj = oLeader, .ObjType = "LeaderNote"})
+                End If
+            Next
+            
+            ' 3. Title Block
+            If oSheet.TitleBlock IsNot Nothing Then
+                Try
+                    Dim oTB As TitleBlock = oSheet.TitleBlock
+                    For Each t As Inventor.TextBox In oTB.Definition.Sketch.TextBoxes
+                        If t.FormattedText.Contains("<Prompt") Then
+                            If IsMatch(oTB.GetResultText(t), findStr) Then
+                                searchResults.Add(New FoundText With {.SheetObj = oSheet, .ParentObj = oTB, .TBox = t, .ObjType = "TitleBlock"})
+                            End If
+                        End If
+                    Next
+                Catch ex As Exception
+                End Try
+            End If
+            
+            ' 4. Symbols
+            For Each oSym As SketchedSymbol In oSheet.SketchedSymbols
+                Try
+                    For Each t As Inventor.TextBox In oSym.Definition.Sketch.TextBoxes
+                        If t.FormattedText.Contains("<Prompt") Then
+                            If IsMatch(oSym.GetResultText(t), findStr) Then
+                                searchResults.Add(New FoundText With {.SheetObj = oSheet, .ParentObj = oSym, .TBox = t, .ObjType = "Symbol"})
+                            End If
+                        End If
+                    Next
+                Catch ex As Exception
+                End Try
+            Next
+        Next
+    End Sub
+
+    Private Sub btnFind_Click(sender As Object, e As EventArgs)
+        Dim currentInput As String = CleanStr(txtFind.Text)
+        If currentInput = "" Then Return
+        
+        If lastSearchTerm <> currentInput Or searchResults.Count = 0 Then
+            ScanDocument()
+            lastSearchTerm = currentInput
+            currentIndex = -1
+        End If
+
+        If searchResults.Count = 0 Then
+            lblStatus.Text = "Không tìm thấy kết quả nào."
+            Return
+        End If
+
+        currentIndex += 1
+        If currentIndex >= searchResults.Count Then
+            currentIndex = 0
+            lblStatus.Text = "Hết bản vẽ. Quay lại mục đầu."
+        Else
+            lblStatus.Text = "Tìm thấy: " & (currentIndex + 1) & " / " & searchResults.Count
+        End If
+
+        ZoomToCurrentTarget()
+    End Sub
+
+    Private Sub ZoomToCurrentTarget()
+        If currentIndex < 0 Or currentIndex >= searchResults.Count Then Return
+        Dim item As FoundText = searchResults(currentIndex)
+        If item.SheetObj IsNot drawDoc.ActiveSheet Then item.SheetObj.Activate()
+        drawDoc.SelectSet.Clear()
+        drawDoc.SelectSet.Select(item.ParentObj)
+        Try : invApp.CommandManager.ControlDefinitions.Item("AppZoomSelectCmd").Execute() : Catch : End Try
+    End Sub
+
+    ' Thay thế text (Dùng Regex để thay thế không phân biệt hoa thường)
+    Private Function PerformReplace(source As String, find As String, replace As String) As String
+        Return System.Text.RegularExpressions.Regex.Replace(source, System.Text.RegularExpressions.Regex.Escape(find), replace, System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+    End Function
+
+    Private Sub btnReplace_Click(sender As Object, e As EventArgs)
+        If currentIndex < 0 Or currentIndex >= searchResults.Count Then Return
+        
+        Dim item As FoundText = searchResults(currentIndex)
+        Dim f As String = CleanStr(txtFind.Text)
+        Dim r As String = CleanStr(txtReplace.Text)
+
+        Try
+            Select Case item.ObjType
+                Case "GeneralNote"
+                    Dim obj As GeneralNote = item.ParentObj
+                    obj.FormattedText = PerformReplace(obj.FormattedText, f, r)
+                Case "LeaderNote"
+                    Dim obj As LeaderNote = item.ParentObj
+                    obj.FormattedText = PerformReplace(obj.FormattedText, f, r)
+                Case "TitleBlock"
+                    Dim obj As TitleBlock = item.ParentObj
+                    obj.SetPromptResultText(item.TBox, PerformReplace(obj.GetResultText(item.TBox), f, r))
+                Case "Symbol"
+                    Dim obj As SketchedSymbol = item.ParentObj
+                    obj.SetPromptResultText(item.TBox, PerformReplace(obj.GetResultText(item.TBox), f, r))
+            End Select
+            drawDoc.Update()
+            searchResults.RemoveAt(currentIndex)
+            currentIndex -= 1 
+            lblStatus.Text = "Đã thay thế mục hiện tại."
+        Catch ex As Exception
+            lblStatus.Text = "Lỗi thay thế."
+        End Try
+    End Sub
+
+    Private Sub btnReplaceAll_Click(sender As Object, e As EventArgs)
+        Dim f As String = CleanStr(txtFind.Text)
+        Dim r As String = CleanStr(txtReplace.Text)
+        If f = "" Then Return
+        
+        ScanDocument()
+        Dim count As Integer = 0
+        For Each item In searchResults
+            Try
+                Select Case item.ObjType
+                    Case "GeneralNote"
+                        Dim obj As GeneralNote = item.ParentObj
+                        obj.FormattedText = PerformReplace(obj.FormattedText, f, r)
+                    Case "LeaderNote"
+                        Dim obj As LeaderNote = item.ParentObj
+                        obj.FormattedText = PerformReplace(obj.FormattedText, f, r)
+                    Case "TitleBlock"
+                        Dim obj As TitleBlock = item.ParentObj
+                        obj.SetPromptResultText(item.TBox, PerformReplace(obj.GetResultText(item.TBox), f, r))
+                    Case "Symbol"
+                        Dim obj As SketchedSymbol = item.ParentObj
+                        obj.SetPromptResultText(item.TBox, PerformReplace(obj.GetResultText(item.TBox), f, r))
+                End Select
+                count += 1
+            Catch : End Try
+        Next
+        drawDoc.Update()
+        searchResults.Clear()
+        currentIndex = -1
+        lblStatus.Text = "Đã thay thế tất cả " & count & " vị trí."
+    End Sub
+End Class

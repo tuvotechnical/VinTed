@@ -222,15 +222,30 @@ namespace VinTed
 
                 panelDrawing.CommandControls.AddButton(_btnCopyHatch);
 
+                // --- TẠO TAB CHO MÔI TRƯỜNG ASSEMBLY ---
+                Ribbon assemblyRibbon = _invApp.UserInterfaceManager.Ribbons["Assembly"];
+                
+                RibbonTab asmVinTedTab = null;
+                try
+                {
+                    asmVinTedTab = assemblyRibbon.RibbonTabs["VinTed"];
+                }
+                catch (Exception)
+                {
+                    asmVinTedTab = assemblyRibbon.RibbonTabs.Add(
+                        "VinTed", "VinTed_AsmTab",
+                        "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}");
+                }
+
                 // Tạo Panel Assembly Tools cho Insert Plus
                 RibbonPanel panelAssembly = null;
                 try
                 {
-                    panelAssembly = vinTedTab.RibbonPanels["Assembly Tools"];
+                    panelAssembly = asmVinTedTab.RibbonPanels["Assembly Tools"];
                 }
                 catch (Exception)
                 {
-                    panelAssembly = vinTedTab.RibbonPanels.Add(
+                    panelAssembly = asmVinTedTab.RibbonPanels.Add(
                         "Assembly Tools", "VinTed_AssemblyTools",
                         "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}");
                 }

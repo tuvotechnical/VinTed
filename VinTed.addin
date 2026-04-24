@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Addin Type="Standard">
+  <ClassId>{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}</ClassId>
+  <ClientId>{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}</ClientId>
+  <DisplayName>VinTed</DisplayName>
+  <Description>VinTed Add-in for Autodesk Inventor</Description>
+  <Assembly>C:\Users\tuvot\AppData\Roaming\Autodesk\ApplicationPlugins\VinTed\VinTed.dll</Assembly>
+  <AddinType>Standard</AddinType>
+  <LoadOnStartUp>1</LoadOnStartUp>
+  <UserUnloadable>1</UserUnloadable>
+  <Hidden>0</Hidden>
+  <SupportedSoftwareVersionGreaterThan>16..</SupportedSoftwareVersionGreaterThan>
+</Addin>

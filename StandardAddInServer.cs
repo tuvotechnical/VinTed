@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using Inventor;
 
 namespace VinTed
@@ -9,6 +10,7 @@ namespace VinTed
     /// <summary>
     /// Entry point cho VinTed Add-in.
     /// Đăng ký Ribbon Button vào Ribbon Tab "VinTed" của môi trường Drawing.
+    /// Tích hợp auto-update checker khi khởi động.
     /// </summary>
     [ComVisible(true)]
     [Guid("D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90")]
@@ -18,6 +20,7 @@ namespace VinTed
         private Application _invApp;
         private ButtonDefinition _btnFindReplace;
         private static string _addinFolder;
+        private System.Windows.Threading.Dispatcher _uiDispatcher;
 
         public void Activate(ApplicationAddInSite addInSiteObject, bool firstTime)
         {
@@ -26,6 +29,9 @@ namespace VinTed
                 // Đăng ký AssemblyResolve để CLR tìm ModernWpf.dll cạnh VinTed.dll
                 _addinFolder = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                 AppDomain.CurrentDomain.AssemblyResolve += OnAssemblyResolve;
+
+                // Lưu Dispatcher của UI thread (Inventor main STA thread)
+                _uiDispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
 
                 _invApp = addInSiteObject.Application;
 
@@ -60,6 +66,9 @@ namespace VinTed
                 {
                     AddToRibbon();
                 }
+
+                // Kiểm tra cập nhật (background, không block Inventor)
+                CheckForUpdateAsync();
             }
             catch (Exception ex)
             {
@@ -69,6 +78,49 @@ namespace VinTed
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Error);
             }
+        }
+
+        /// <summary>
+        /// Kiểm tra cập nhật trên background thread.
+        /// Nếu có version mới, dispatch về UI thread để hiện dialog.
+        /// </summary>
+        private void CheckForUpdateAsync()
+        {
+            ThreadPool.QueueUserWorkItem(delegate(object state)
+            {
+                try
+                {
+                    // Delay 5 giây để Inventor khởi động xong
+                    Thread.Sleep(5000);
+
+                    Updater.UpdateCheckResult result = Updater.UpdateChecker.CheckForUpdate();
+                    if (result.HasUpdate)
+                    {
+                        // Kiểm tra user đã skip version này chưa
+                        if (Updater.UpdateChecker.IsVersionSkipped(result.LatestVersion))
+                        {
+                            return;
+                        }
+
+                        // Dispatch về UI thread để hiện dialog
+                        _uiDispatcher.BeginInvoke(
+                            new Action(delegate()
+                            {
+                                try
+                                {
+                                    Updater.UpdateNotificationWindow win =
+                                        new Updater.UpdateNotificationWindow(result);
+                                    win.Show();
+                                }
+                                catch (Exception) { }
+                            }));
+                    }
+                }
+                catch (Exception)
+                {
+                    // Im lặng — update check không được crash Inventor
+                }
+            });
         }
 
         private void AddToRibbon()

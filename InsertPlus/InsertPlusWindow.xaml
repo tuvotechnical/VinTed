@@ -67,7 +67,7 @@
             <TextBlock Text="BƯỚC 1: CHỌN NGUỒN" Style="{StaticResource VtSectionLabel}" Margin="0,0,0,12"/>
             <Button x:Name="btnSelectSource" Content="1. Chọn Cạnh Bu-lông mẫu" 
                     HorizontalAlignment="Stretch" Click="BtnSelectSource_Click"
-                    Style="{StaticResource VtBtnSecondary}" Margin="0,0,0,8"/>
+                    Margin="0,0,0,8" />
             <TextBlock x:Name="txtSourceInfo" Text="Chưa chọn đối tượng" 
                        FontSize="12" Foreground="{StaticResource VtFgMuted}" 
                        TextWrapping="Wrap" Margin="4,0,0,16"/>

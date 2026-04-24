@@ -1,0 +1,94 @@
+<Window x:Class="VinTed.InsertPlus.InsertPlusWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        ui:ThemeManager.RequestedTheme="Light"
+        Title="VinTed — Insert Plus"
+        Width="380" Height="480"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        ResizeMode="NoResize"
+        FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ui:ThemeResources RequestedTheme="Light"/>
+                <ui:XamlControlsResources/>
+                <ResourceDictionary Source="/VinTed;component/Themes/ThemeColors.xaml"/>
+                <ResourceDictionary Source="/VinTed;component/Themes/ControlStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid Background="{StaticResource VtBgPrimary}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{StaticResource VtBgCard}" 
+                BorderBrush="{StaticResource VtBorderLight}" BorderThickness="0,0,0,1"
+                Padding="24,16">
+            <StackPanel>
+                <TextBlock Text="CẤU HÌNH RÀNG BUỘC" Style="{StaticResource VtSectionLabel}" Margin="0,0,0,12"/>
+                
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <StackPanel Grid.Column="0" Margin="0,0,24,0">
+                        <TextBlock Text="Offset (mm)" FontSize="12" Foreground="{StaticResource VtFgSecondary}" Margin="0,0,0,4"/>
+                        <TextBox x:Name="txtOffset" Text="0.0" Width="80" HorizontalAlignment="Left"/>
+                    </StackPanel>
+                    
+                    <StackPanel Grid.Column="1">
+                        <TextBlock Text="Solution" FontSize="12" Foreground="{StaticResource VtFgSecondary}" Margin="0,0,0,4"/>
+                        <StackPanel Orientation="Horizontal">
+                            <RadioButton x:Name="rbOpposed" Content="Opposed" IsChecked="True" Margin="0,0,12,0"/>
+                            <RadioButton x:Name="rbAligned" Content="Aligned"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+
+                <CheckBox x:Name="chkLockRotation" Content="Lock Rotation" IsChecked="True" Margin="0,16,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Main Logic -->
+        <StackPanel Grid.Row="1" Margin="24,20,24,0">
+            
+            <!-- Step 1: Source -->
+            <TextBlock Text="BƯỚC 1: CHỌN NGUỒN" Style="{StaticResource VtSectionLabel}" Margin="0,0,0,12"/>
+            <Button x:Name="btnSelectSource" Content="1. Chọn Cạnh Bu-lông mẫu" 
+                    HorizontalAlignment="Stretch" Click="BtnSelectSource_Click"
+                    Style="{StaticResource VtBtnSecondary}" Margin="0,0,0,8"/>
+            <TextBlock x:Name="txtSourceInfo" Text="Chưa chọn đối tượng" 
+                       FontSize="12" Foreground="{StaticResource VtFgMuted}" 
+                       TextWrapping="Wrap" Margin="4,0,0,16"/>
+            
+            <CheckBox x:Name="chkIncludeHardware" Content="Copy kèm Vòng đệm / Đai ốc (Auto-detect)" 
+                      IsChecked="True" Margin="0,0,0,24" FontSize="12" ToolTip="Tự động tìm và copy các chi tiết khác đang bị ràng buộc vào bu-lông này"/>
+
+            <!-- Step 2: Target -->
+            <TextBlock Text="BƯỚC 2: CHỌN ĐÍCH" Style="{StaticResource VtSectionLabel}" Margin="0,0,0,12"/>
+            
+            <Button x:Name="btnManualAttach" Content="2A. Copy thủ công (Chọn từng lỗ)" 
+                    HorizontalAlignment="Stretch" Click="BtnManualAttach_Click"
+                    Style="{StaticResource VtBtnPrimary}" Margin="0,0,0,12" IsEnabled="False"/>
+                    
+            <Button x:Name="btnAutoAttach" Content="2B. Copy tự động (Fill toàn mặt phẳng)" 
+                    HorizontalAlignment="Stretch" Click="BtnAutoAttach_Click"
+                    Style="{StaticResource VtBtnSuccess}" IsEnabled="False"/>
+            <TextBlock Text="Click 1 lỗ mẫu, hệ thống tự điền các lỗ giống nhau trên mặt đó." 
+                       FontSize="11" Foreground="{StaticResource VtFgMuted}" 
+                       TextWrapping="Wrap" Margin="4,4,0,0"/>
+        </StackPanel>
+
+    </Grid>
+</Window>

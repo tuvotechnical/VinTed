@@ -20,6 +20,7 @@ namespace VinTed
         private Application _invApp;
         private ButtonDefinition _btnFindReplace;
         private ButtonDefinition _btnCopyHatch;
+        private ButtonDefinition _btnInsertPlus;
         private static string _addinFolder;
         private System.Windows.Threading.Dispatcher _uiDispatcher;
 
@@ -41,10 +42,10 @@ namespace VinTed
                 stdole.IPictureDisp iconLarge = null;
                 try
                 {
-                    iconSmall = IconHelper.CreateIconFromIconify("mdi/find-replace", 16,
-                        System.Drawing.Color.White, System.Drawing.Color.FromArgb(0, 0, 0, 0));
-                    iconLarge = IconHelper.CreateIconFromIconify("mdi/find-replace", 32,
-                        System.Drawing.Color.White, System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                    iconSmall = IconHelper.CreateIconFromIconify("fluent/find-replace-24-filled", 16,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                    iconLarge = IconHelper.CreateIconFromIconify("fluent/find-replace-24-filled", 32,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
                 }
                 catch (Exception) { }
 
@@ -85,6 +86,30 @@ namespace VinTed
                     iconCopyHatchLarge);
 
                 _btnCopyHatch.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(OnCopyHatch_Execute);
+
+                // Tạo ButtonDefinition cho Insert Plus
+                stdole.IPictureDisp iconInsertSmall = null;
+                stdole.IPictureDisp iconInsertLarge = null;
+                try
+                {
+                    iconInsertSmall = IconHelper.CreateIconFromIconify("fluent/add-circle-24-filled", 16,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                    iconInsertLarge = IconHelper.CreateIconFromIconify("fluent/add-circle-24-filled", 32,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                }
+                catch (Exception) { }
+
+                _btnInsertPlus = ctrlDefs.AddButtonDefinition(
+                    "Insert Plus+",
+                    "VinTed_InsertPlus",
+                    CommandTypesEnum.kEditMaskCmdType,
+                    "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}",
+                    "Copy và lắp ráp tự động bu-lông, đai ốc hàng loạt",
+                    "VinTed Insert Plus+\nSao chép cụm chi tiết phần cứng và tự động tạo ràng buộc Insert.",
+                    iconInsertSmall,
+                    iconInsertLarge);
+
+                _btnInsertPlus.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(OnInsertPlus_Execute);
 
                 // Đăng ký vào Ribbon nếu firstTime
                 if (firstTime)
@@ -196,6 +221,21 @@ namespace VinTed
                 }
 
                 panelDrawing.CommandControls.AddButton(_btnCopyHatch);
+
+                // Tạo Panel Assembly Tools cho Insert Plus
+                RibbonPanel panelAssembly = null;
+                try
+                {
+                    panelAssembly = vinTedTab.RibbonPanels["Assembly Tools"];
+                }
+                catch (Exception)
+                {
+                    panelAssembly = vinTedTab.RibbonPanels.Add(
+                        "Assembly Tools", "VinTed_AssemblyTools",
+                        "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}");
+                }
+
+                panelAssembly.CommandControls.AddButton(_btnInsertPlus);
             }
             catch (Exception ex)
             {
@@ -277,11 +317,47 @@ namespace VinTed
             }
         }
 
+        private void OnInsertPlus_Execute(NameValueMap context)
+        {
+            try
+            {
+                Document activeDoc = _invApp.ActiveDocument;
+                if (activeDoc == null || activeDoc.DocumentType != DocumentTypeEnum.kAssemblyDocumentObject)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Tính năng Insert Plus+ chỉ hoạt động trong môi trường Assembly (.iam).",
+                        "VinTed",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning);
+                    return;
+                }
+
+                AssemblyDocument asmDoc = (AssemblyDocument)activeDoc;
+                InsertPlus.InsertPlusWindow window = new InsertPlus.InsertPlusWindow(_invApp, asmDoc);
+                window.Show();
+            }
+            catch (Exception ex)
+            {
+                string msg = "Lỗi: " + ex.Message;
+                if (ex.InnerException != null)
+                {
+                    msg = msg + "\n\nInner: " + ex.InnerException.Message;
+                }
+                msg = msg + "\n\nStack: " + ex.StackTrace;
+                System.Windows.MessageBox.Show(
+                    msg,
+                    "VinTed Error",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+            }
+        }
+
         public void Deactivate()
         {
             AppDomain.CurrentDomain.AssemblyResolve -= OnAssemblyResolve;
             _btnFindReplace = null;
             _btnCopyHatch = null;
+            _btnInsertPlus = null;
             _invApp = null;
             GC.Collect();
             GC.WaitForPendingFinalizers();

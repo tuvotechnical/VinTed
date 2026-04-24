@@ -68,7 +68,19 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
 * **Yêu cầu:** Inventor 2022+ (API `HatchRegions` khả dụng từ 2022).
 * **Ribbon:** Tab **VinTed** → Panel **Drawing Tools**.
 
-### C. Auto-Update Checker (Tự động kiểm tra cập nhật)
+### C. Insert Plus+ (Copy và Lắp ráp tự động)
+* **Chức năng:** Tự động copy cụm chi tiết phần cứng (bu-lông, vòng đệm, đai ốc...) và lắp ráp (Insert Constraint) hàng loạt vào các lỗ trên cụm lắp ráp (Assembly).
+* **Workflow 2 bước siêu tốc:**
+  1. **Bước 1 (Chọn Nguồn):** Chọn 1 cạnh tròn (Circular Edge) trên chi tiết bu-lông mẫu đã có sẵn. Add-in tự động nhận diện `ComponentOccurrence` chứa cạnh đó. Tùy chọn tự động quét và copy kèm các chi tiết đang được liên kết cứng với bu-lông này (vòng đệm, đai ốc).
+  2. **Bước 2 (Chọn Đích):**
+     - **Copy thủ công:** Lặp lại việc click vào từng lỗ trên bản vẽ, hệ thống tự động copy cụm nguồn và Insert vào lỗ vừa click.
+     - **Copy tự động:** Chỉ cần click vào 1 lỗ mẫu trên mặt phẳng. Hệ thống sẽ quét toàn bộ mặt phẳng (Planar Face) đó, tìm TẤT CẢ các lỗ có cùng đường kính, copy cụm nguồn và Insert hàng loạt vào các lỗ tìm được chỉ trong 1 thao tác.
+* **Tùy chọn:** Hỗ trợ điều chỉnh `Offset`, `Aligned/Opposed` (Solution), và `Lock Rotation` (Khóa xoay).
+* **An toàn dữ liệu:** Tích hợp `Transaction` để gom tất cả các thao tác copy tự động vào 1 Undo step duy nhất (Ctrl+Z).
+* **Giao diện:** WPF ModernWpf **Light Theme** — trực quan, thiết kế form nhập liệu chuyên nghiệp. UI tự động ẩn khi thao tác trên bản vẽ để không che khuất màn hình.
+* **Ribbon:** Tab **VinTed** → Panel **Assembly Tools**.
+
+### D. Auto-Update Checker (Tự động kiểm tra cập nhật)
 * **Chức năng:** Khi Inventor khởi động, add-in tự động kiểm tra phiên bản mới nhất trên GitHub Releases (background, không block UI).
 * **Cơ chế:**
   * Dùng `System.Net.WebClient` gọi GitHub REST API (`/repos/tuvotechnical/VinTed/releases/latest`).

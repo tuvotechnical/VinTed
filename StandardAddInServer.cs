@@ -19,6 +19,7 @@ namespace VinTed
     {
         private Application _invApp;
         private ButtonDefinition _btnFindReplace;
+        private ButtonDefinition _btnCopyHatch;
         private static string _addinFolder;
         private System.Windows.Threading.Dispatcher _uiDispatcher;
 
@@ -60,6 +61,30 @@ namespace VinTed
                     iconLarge);
 
                 _btnFindReplace.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(OnFindReplace_Execute);
+
+                // Tạo ButtonDefinition cho Copy Hatch
+                stdole.IPictureDisp iconCopyHatchSmall = null;
+                stdole.IPictureDisp iconCopyHatchLarge = null;
+                try
+                {
+                    iconCopyHatchSmall = IconHelper.CreateIconFromIconify("mdi/format-paint", 16,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                    iconCopyHatchLarge = IconHelper.CreateIconFromIconify("mdi/format-paint", 32,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                }
+                catch (Exception) { }
+
+                _btnCopyHatch = ctrlDefs.AddButtonDefinition(
+                    "Copy Hatch",
+                    "VinTed_CopyHatch",
+                    CommandTypesEnum.kEditMaskCmdType,
+                    "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}",
+                    "Copy Hatch Pattern giữa các chi tiết trong Section View",
+                    "VinTed Copy Hatch\nSao chép pattern mặt cắt từ chi tiết mẫu sang chi tiết đích.",
+                    iconCopyHatchSmall,
+                    iconCopyHatchLarge);
+
+                _btnCopyHatch.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(OnCopyHatch_Execute);
 
                 // Đăng ký vào Ribbon nếu firstTime
                 if (firstTime)
@@ -156,6 +181,21 @@ namespace VinTed
                 }
 
                 panel.CommandControls.AddButton(_btnFindReplace);
+
+                // Tạo Panel Drawing Tools cho Copy Hatch
+                RibbonPanel panelDrawing = null;
+                try
+                {
+                    panelDrawing = vinTedTab.RibbonPanels["Drawing Tools"];
+                }
+                catch (Exception)
+                {
+                    panelDrawing = vinTedTab.RibbonPanels.Add(
+                        "Drawing Tools", "VinTed_DrawingTools",
+                        "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}");
+                }
+
+                panelDrawing.CommandControls.AddButton(_btnCopyHatch);
             }
             catch (Exception ex)
             {
@@ -202,10 +242,46 @@ namespace VinTed
             }
         }
 
+        private void OnCopyHatch_Execute(NameValueMap context)
+        {
+            try
+            {
+                Document activeDoc = _invApp.ActiveDocument;
+                if (activeDoc == null || activeDoc.DocumentType != DocumentTypeEnum.kDrawingDocumentObject)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Tính năng này chỉ hoạt động trong môi trường Drawing (.idw / .dwg).",
+                        "VinTed",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning);
+                    return;
+                }
+
+                DrawingDocument drawDoc = (DrawingDocument)activeDoc;
+                CopyHatch.CopyHatchWindow window = new CopyHatch.CopyHatchWindow(_invApp, drawDoc);
+                window.Show();
+            }
+            catch (Exception ex)
+            {
+                string msg = "Lỗi: " + ex.Message;
+                if (ex.InnerException != null)
+                {
+                    msg = msg + "\n\nInner: " + ex.InnerException.Message;
+                }
+                msg = msg + "\n\nStack: " + ex.StackTrace;
+                System.Windows.MessageBox.Show(
+                    msg,
+                    "VinTed Error",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+            }
+        }
+
         public void Deactivate()
         {
             AppDomain.CurrentDomain.AssemblyResolve -= OnAssemblyResolve;
             _btnFindReplace = null;
+            _btnCopyHatch = null;
             _invApp = null;
             GC.Collect();
             GC.WaitForPendingFinalizers();

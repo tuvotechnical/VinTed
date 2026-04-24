@@ -24,7 +24,7 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
   * Biên dịch qua script PowerShell `build.ps1`.
   * Deploy tự động vào `%AppData%\Autodesk\ApplicationPlugins\VinTed`.
 * **Entry Point:** Class `StandardAddInServer` (`ApplicationAddInServer`, `[ComVisible(true)]`).
-  * Đăng ký Ribbon Tab **VinTed** → Panel **Text Tools** trong môi trường Drawing.
+  * Đăng ký Ribbon Tab **VinTed** → Panel **Text Tools** + Panel **Drawing Tools** trong môi trường Drawing.
   * Tích hợp `AppDomain.AssemblyResolve` handler để Inventor CLR tìm thấy ModernWpf.dll.
 
 ---
@@ -52,7 +52,23 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
   * Tự động zoom đến vị trí Text tìm được (`AppZoomSelectCmd`).
   * 3 chế độ: **Find Next** (duyệt tuần tự, quay vòng), **Replace** (thay thế mục hiện tại), **Replace All** (thay thế toàn bộ).
 
-### B. Auto-Update Checker (Tự động kiểm tra cập nhật)
+### B. Copy Hatch Pattern (Sao chép mặt cắt)
+* **Chức năng:** Sao chép pattern mặt cắt (hatch) từ chi tiết mẫu sang nhiều chi tiết đích trong Section View.
+* **Workflow 3 bước:**
+  1. Chọn một **cạnh** (Edge) của chi tiết MẪU (Source) trong hình cắt.
+  2. Chọn **cạnh** chi tiết ĐÍCH (Target) — lặp lại nhiều lần.
+  3. Nhấn **ESC** để kết thúc.
+* **Thông số được copy:** Pattern, Scale, Angle, Color.
+* **Kỹ thuật cốt lõi:**
+  * Sử dụng `CommandManager.Pick(kDrawingCurveSegmentFilter)` để chọn cạnh.
+  * Truy xuất `SurfaceBody` từ `DrawingCurve.ModelGeometry` (Edge → Face → SurfaceBody).
+  * Duyệt `DrawingView.HatchRegions` để tìm hatch region khớp với SurfaceBody.
+  * Tự động tắt `ByMaterial` trước khi áp dụng pattern mới.
+* **Giao diện:** WPF ModernWpf **Light Theme** — header gradient xanh, hướng dẫn 3 bước trực quan, bộ đếm hatch đã copy, status bar realtime.
+* **Yêu cầu:** Inventor 2022+ (API `HatchRegions` khả dụng từ 2022).
+* **Ribbon:** Tab **VinTed** → Panel **Drawing Tools**.
+
+### C. Auto-Update Checker (Tự động kiểm tra cập nhật)
 * **Chức năng:** Khi Inventor khởi động, add-in tự động kiểm tra phiên bản mới nhất trên GitHub Releases (background, không block UI).
 * **Cơ chế:**
   * Dùng `System.Net.WebClient` gọi GitHub REST API (`/repos/tuvotechnical/VinTed/releases/latest`).

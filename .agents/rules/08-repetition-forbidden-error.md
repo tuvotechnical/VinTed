@@ -92,6 +92,36 @@ trigger: always_on
   [Inventor.TypeName].GetProperties() | ForEach-Object { Write-Host "$($_.Name)" }
   ```
 
+## ERR-10: Thay đổi property COM object cần Transaction — E_FAIL 0x80004005
+- **Lỗi:** `Unspecified error (Exception from HRESULT: 0x80004005 (E_FAIL))` khi set `DrawingViewHatchRegion.Pattern`, `.Scale`, `.Angle`
+- **Nguyên nhân:** iLogic runtime **tự động wrap** code trong Transaction. Add-in (ApplicationAddInServer) **KHÔNG** có cơ chế này. Inventor COM API từ chối thay đổi property nếu không có Transaction.
+- **Fix:** Wrap mọi thay đổi document trong `TransactionManager.StartTransaction`:
+  ```csharp
+  Transaction txn = _invApp.TransactionManager.StartTransaction(
+      _invApp.ActiveDocument, "VinTed Copy Hatch");
+  try
+  {
+      // thay đổi properties...
+      txn.End();
+  }
+  catch (Exception)
+  {
+      try { txn.Abort(); } catch { }
+  }
+  ```
+- **Quy tắc:** Bất kỳ thao tác nào modify Inventor document (set property, add/delete object) trong Add-in đều **BẮT BUỘC** phải wrap trong Transaction.
+
+## ERR-11: COM late binding (.Parent) khác early binding — Edge navigation
+- **Lỗi:** `edge.Faces[1]` hoặc `face.SurfaceBody` gây runtime error hoặc trả kết quả sai.
+- **Nguyên nhân:** iLogic VB dùng **late binding** (`Object.Parent.Parent`) qua IDispatch, nhưng C# early binding dùng sai property name (`Faces`, `SurfaceBody`) không tồn tại trên COM type.
+- **Fix:** Dùng reflection late binding giống VB:
+  ```csharp
+  object parent = comObj.GetType().InvokeMember("Parent",
+      BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.Public,
+      null, comObj, null);
+  ```
+- **Quy tắc:** Khi port iLogic VB sang C#, nếu VB code dùng `Object` type với `.PropertyName`, phải dùng reflection `InvokeMember` trong C# — KHÔNG giả định property tồn tại qua early binding.
+
 ---
 
 ## QUY TẮC CHUNG RÚT RA

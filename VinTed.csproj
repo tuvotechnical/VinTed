@@ -57,6 +57,10 @@
     <Compile Include="Updater\UpdateNotificationWindow.xaml.cs">
       <DependentUpon>UpdateNotificationWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="CopyHatch\CopyHatchEngine.cs" />
+    <Compile Include="CopyHatch\CopyHatchWindow.xaml.cs">
+      <DependentUpon>CopyHatchWindow.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Page Include="Themes\ThemeColors.xaml">
@@ -72,6 +76,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="Updater\UpdateNotificationWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="CopyHatch\CopyHatchWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

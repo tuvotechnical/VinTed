@@ -1,3 +1,7 @@
+---
+trigger: always_on
+---
+
 # ICON MANAGEMENT — ICONIFY API
 
 ## Quy tắc tuyệt đối
@@ -12,6 +16,11 @@ Iconify là framework mã nguồn mở tổng hợp hơn 150+ bộ icon phổ bi
 - Không cần tạo tài khoản hay API Key
 - Trả về định dạng SVG siêu nhẹ, raw data hoặc HTML string
 - Tốc độ phản hồi cực nhanh, có thể self-host
+
+### QUY TẮC MÀU SẮC ICON (BẮT BUỘC)
+- Luôn sử dụng icon có màu sắc (full color hoặc themed color)
+- Không dùng icon đơn sắc mặc định (đen/trắng), trừ: trạng thái disabled, UI tối giản có chủ đích
+- Icon phải: dễ nhận diện trong < 1 giây, có độ tương phản tốt, đồng bộ với theme hệ thống
 
 ### REST Endpoints
 ```

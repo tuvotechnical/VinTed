@@ -23,7 +23,16 @@
 
 ### A. Find & Replace Text (Tìm kiếm và thay thế)
 * **Chức năng:** Tìm và thay thế hàng loạt nội dung Text trong môi trường Drawing.
-* **Đối tượng hỗ trợ:** General Notes, Leader Notes, Title Blocks (Prompt TextBox), Sketched Symbols (Prompt TextBox).
+* **Đối tượng hỗ trợ (18 loại):**
+  * **Ghi chú cơ bản:** General Notes, Leader Notes, Title Blocks (Prompt), Sketched Symbols (Prompt).
+  * **Kích thước:** Drawing Dimensions (Override/Prefix/Suffix).
+  * **Ghi chú đặc thù:** Hole/Thread Notes, Chamfer Notes, Bend Notes, Punch Notes.
+  * **Nhãn hình chiếu:** Drawing View Labels (Section, Detail...).
+  * **Bảng biểu:** Parts Lists, Custom Tables, Revision Tables, Hole Tables.
+  * **Bong bóng:** Balloons (Item Number Override).
+  * **Ký hiệu kỹ thuật:** Feature Control Frames (GD&T), Surface Texture Symbols.
+  * **Sketch:** Sketch TextBoxes tự do trên Sheet.
+* **Bộ lọc phạm vi quét:** Panel checkbox phân nhóm cho từng loại text, có nút "Chọn tất cả", mặc định bật toàn bộ. Hỗ trợ thu gọn/mở rộng panel.
 * **Giao diện:** WPF ModernWpf **Light Theme** — Windows 10/11 Fluent Design, native window chrome, placeholder text.
 * **Kỹ thuật cốt lõi:**
   * Tìm kiếm không phân biệt hoa thường (case-insensitive) sử dụng `Regex.Replace`.

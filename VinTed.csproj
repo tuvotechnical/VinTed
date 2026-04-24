@@ -48,6 +48,7 @@
     <Compile Include="StandardAddInServer.cs" />
     <Compile Include="IconHelper.cs" />
     <Compile Include="FindReplace\FoundTextItem.cs" />
+    <Compile Include="FindReplace\ScanOptions.cs" />
     <Compile Include="FindReplace\FindReplaceEngine.cs" />
     <Compile Include="FindReplace\FindReplaceWindow.xaml.cs">
       <DependentUpon>FindReplaceWindow.xaml</DependentUpon>

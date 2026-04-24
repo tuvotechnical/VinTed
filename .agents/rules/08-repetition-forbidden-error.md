@@ -77,6 +77,21 @@ trigger: always_on
   ```
 - **Quy tắc:** Nếu Dictionary B dùng `StaticResource` từ Dictionary A, thì B **phải merge A bên trong** — không được dựa vào thứ tự merge ở Window level.
 
+## ERR-09: Inventor 2023 API — Nhiều type không có `FormattedText` hoặc không tồn tại
+- **Lỗi:** `CS1061: 'Inventor.HoleThreadNote' does not contain a definition for 'FormattedText'`; `CS0246: 'WeldSymbol' could not be found`
+- **Nguyên nhân:** Inventor 2023 COM API có naming convention không nhất quán giữa các object type:
+  - `HoleThreadNote` → dùng `FormattedHoleThreadNote` (KHÔNG phải `FormattedText`)
+  - `FeatureControlFrame` → KHÔNG có `FormattedText`, phải iterate `FeatureControlFrameRows` → `Tolerance`, `InlineNote`, `DatumOne/Two/Three`
+  - `SurfaceTextureSymbol` → KHÔNG có `FormattedText`, dùng individual fields: `MaximumRoughness`, `MinimumRoughness`, `ProductionMethod`, `MachiningAllowance`
+  - `HoleTableCell` → dùng `Text` / `FormattedText` (KHÔNG phải `Value`)
+  - `WeldSymbol` / `WeldingSymbol` → **KHÔNG TỒN TẠI** trong Inventor 2023 Interop
+  - `Sheet` → KHÔNG có property `WeldSymbols`
+- **Fix:** Luôn kiểm tra API bằng reflection trước khi sử dụng. Dùng script PowerShell:
+  ```powershell
+  Add-Type -Path '...\Autodesk.Inventor.Interop.dll'
+  [Inventor.TypeName].GetProperties() | ForEach-Object { Write-Host "$($_.Name)" }
+  ```
+
 ---
 
 ## QUY TẮC CHUNG RÚT RA
@@ -97,3 +112,6 @@ Bất kỳ DLL nào ngoài .NET Framework (ModernWpf, NuGet packages...) đều 
 
 ### XAML ThemeResource
 KHÔNG dùng `ThemeResource *Color` cho property cần `Brush`. Dùng `*Brush` hoặc inline color.
+
+### Inventor COM API — KHÔNG giả định property name
+Trước khi dùng bất kỳ property/method nào của Inventor COM type, **BẮT BUỘC** phải kiểm tra bằng reflection hoặc Object Browser. KHÔNG giả định `FormattedText` tồn tại trên mọi Note/Symbol type.

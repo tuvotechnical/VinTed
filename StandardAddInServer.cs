@@ -136,8 +136,14 @@ namespace VinTed
             }
             catch (Exception ex)
             {
+                string msg = "Lỗi: " + ex.Message;
+                if (ex.InnerException != null)
+                {
+                    msg = msg + "\n\nInner: " + ex.InnerException.Message;
+                }
+                msg = msg + "\n\nStack: " + ex.StackTrace;
                 System.Windows.MessageBox.Show(
-                    "Lỗi: " + ex.Message,
+                    msg,
                     "VinTed Error",
                     System.Windows.MessageBoxButton.OK,
                     System.Windows.MessageBoxImage.Error);

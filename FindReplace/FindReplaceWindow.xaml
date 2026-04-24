@@ -5,7 +5,7 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         ui:ThemeManager.RequestedTheme="Light"
         Title="VinTed — Find &amp; Replace"
-        Width="470" Height="310"
+        Width="500" Height="620"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
         ResizeMode="NoResize"
@@ -26,17 +26,17 @@
 
     <Grid Background="{StaticResource VtBgPrimary}" Margin="0">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Content -->
-        <StackPanel Grid.Row="0" Margin="24,20,24,12">
+        <!-- Content: Find/Replace -->
+        <StackPanel Grid.Row="0" Margin="24,20,24,0">
             <!-- Find -->
             <TextBlock Text="TÌM KIẾM" Style="{StaticResource VtSectionLabel}"/>
             <TextBox x:Name="txtFind" FontSize="13"
-                     ui:ControlHelper.PlaceholderText="Nhập từ khóa (dùng * thay dấu cách)..."
-                     KeyDown="TxtFind_KeyDown"/>
+                     ui:ControlHelper.PlaceholderText="Nhập từ khóa cần tìm..."/>
 
             <!-- Replace -->
             <TextBlock Text="THAY THẾ" Style="{StaticResource VtSectionLabel}"
@@ -66,10 +66,119 @@
             </Grid>
         </StackPanel>
 
+        <!-- Scan Options Panel -->
+        <Border Grid.Row="1" Margin="24,16,24,12"
+                Background="{StaticResource VtBgCard}"
+                BorderBrush="{StaticResource VtBorderLight}"
+                BorderThickness="1" CornerRadius="6">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header: Toggle expand + Select All -->
+                <Border Grid.Row="0" BorderBrush="{StaticResource VtBorderLight}"
+                        BorderThickness="0,0,0,1" Padding="14,10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="&#xE71C;" FontFamily="Segoe MDL2 Assets"
+                                   FontSize="11" VerticalAlignment="Center" Margin="0,0,6,0"
+                                   Foreground="{StaticResource VtFgSecondary}"
+                                   x:Name="icoExpand" Cursor="Hand"
+                                   MouseLeftButtonDown="ToggleExpand_Click">
+                            <TextBlock.RenderTransform>
+                                <RotateTransform x:Name="icoExpandRotate" Angle="0" CenterX="5.5" CenterY="5.5"/>
+                            </TextBlock.RenderTransform>
+                        </TextBlock>
+                        <TextBlock Grid.Column="1" Text="PHẠM VI QUÉT" FontSize="11"
+                                   FontWeight="SemiBold" VerticalAlignment="Center"
+                                   Foreground="{StaticResource VtFgSecondary}"
+                                   Cursor="Hand" MouseLeftButtonDown="ToggleExpand_Click"/>
+                        <CheckBox x:Name="chkAll" Grid.Column="2" Content="Chọn tất cả"
+                                  IsChecked="True" FontSize="11.5"
+                                  Checked="ChkAll_Changed" Unchecked="ChkAll_Changed"
+                                  VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <!-- Scrollable Checkbox List -->
+                <ScrollViewer Grid.Row="1" x:Name="pnlOptions"
+                              VerticalScrollBarVisibility="Auto"
+                              MaxHeight="220" Margin="0">
+                    <StackPanel Margin="14,8,14,10">
+                        <!-- Group: Notes cơ bản -->
+                        <TextBlock Text="GHI CHÚ CƠ BẢN" Style="{StaticResource VtSectionLabel}" Margin="0,4,0,4"/>
+                        <CheckBox x:Name="chkGeneralNotes" Content="General Notes" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+                        <CheckBox x:Name="chkLeaderNotes" Content="Leader Notes" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+                        <CheckBox x:Name="chkTitleBlocks" Content="Title Block (Prompt)" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+                        <CheckBox x:Name="chkSketchedSymbols" Content="Sketched Symbols (Prompt)" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+
+                        <!-- Group: Kích thước -->
+                        <TextBlock Text="KÍCH THƯỚC" Style="{StaticResource VtSectionLabel}" Margin="0,10,0,4"/>
+                        <CheckBox x:Name="chkDimensions" Content="Drawing Dimensions (Override/Prefix/Suffix)" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+
+                        <!-- Group: Ghi chú đặc thù -->
+                        <TextBlock Text="GHI CHÚ ĐẶC THÙ" Style="{StaticResource VtSectionLabel}" Margin="0,10,0,4"/>
+                        <CheckBox x:Name="chkHoleThread" Content="Hole / Thread Notes" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+                        <CheckBox x:Name="chkChamfer" Content="Chamfer Notes" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+                        <CheckBox x:Name="chkBend" Content="Bend Notes" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+                        <CheckBox x:Name="chkPunch" Content="Punch Notes" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+
+                        <!-- Group: Nhãn hình chiếu -->
+                        <TextBlock Text="NHÃN HÌNH CHIẾU" Style="{StaticResource VtSectionLabel}" Margin="0,10,0,4"/>
+                        <CheckBox x:Name="chkViewLabels" Content="Drawing View Labels" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+
+                        <!-- Group: Bảng biểu -->
+                        <TextBlock Text="BẢNG BIỂU" Style="{StaticResource VtSectionLabel}" Margin="0,10,0,4"/>
+                        <CheckBox x:Name="chkPartsLists" Content="Parts Lists (Bảng kê vật tư)" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+                        <CheckBox x:Name="chkCustomTables" Content="Custom Tables" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+                        <CheckBox x:Name="chkRevisionTables" Content="Revision Tables" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+                        <CheckBox x:Name="chkHoleTables" Content="Hole Tables" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+
+                        <!-- Group: Balloon -->
+                        <TextBlock Text="BONG BÓNG CHỈ THỊ" Style="{StaticResource VtSectionLabel}" Margin="0,10,0,4"/>
+                        <CheckBox x:Name="chkBalloons" Content="Balloons (Item Number Override)" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+
+                        <!-- Group: Ký hiệu -->
+                        <TextBlock Text="KÝ HIỆU KỸ THUẬT" Style="{StaticResource VtSectionLabel}" Margin="0,10,0,4"/>
+                        <CheckBox x:Name="chkFCF" Content="Feature Control Frames (GD&amp;T)" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+                        <CheckBox x:Name="chkSurface" Content="Surface Texture Symbols" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+
+                        <!-- Group: Sketch -->
+                        <TextBlock Text="SKETCH" Style="{StaticResource VtSectionLabel}" Margin="0,10,0,4"/>
+                        <CheckBox x:Name="chkSketchText" Content="Sketch TextBoxes" IsChecked="True" FontSize="11.5"
+                                  Checked="ChkItem_Changed" Unchecked="ChkItem_Changed"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+
         <!-- Status Bar -->
-        <Border Grid.Row="1" Style="{StaticResource VtStatusBar}">
+        <Border Grid.Row="2" Style="{StaticResource VtStatusBar}">
             <TextBlock x:Name="lblStatus"
-                       Text="Gõ * thay cho dấu cách  ·  Không phân biệt hoa thường"
+                       Text="Không phân biệt hoa thường  ·  Hỗ trợ dấu cách trực tiếp"
                        Style="{StaticResource VtStatusText}"/>
         </Border>
     </Grid>

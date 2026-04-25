@@ -21,6 +21,7 @@ namespace VinTed
         private ButtonDefinition _btnFindReplace;
         private ButtonDefinition _btnCopyHatch;
         private ButtonDefinition _btnInsertPlus;
+        private ButtonDefinition _btnUpdate;
         private static string _addinFolder;
         private System.Windows.Threading.Dispatcher _uiDispatcher;
 
@@ -111,6 +112,30 @@ namespace VinTed
 
                 _btnInsertPlus.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(OnInsertPlus_Execute);
 
+                // Tạo ButtonDefinition cho Update
+                stdole.IPictureDisp iconUpdateSmall = null;
+                stdole.IPictureDisp iconUpdateLarge = null;
+                try
+                {
+                    iconUpdateSmall = IconHelper.CreateIconFromIconify("fluent/arrow-sync-circle-24-filled", 16,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                    iconUpdateLarge = IconHelper.CreateIconFromIconify("fluent/arrow-sync-circle-24-filled", 32,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                }
+                catch (Exception) { }
+
+                _btnUpdate = ctrlDefs.AddButtonDefinition(
+                    "Check for Updates",
+                    "VinTed_CheckUpdate",
+                    CommandTypesEnum.kEditMaskCmdType,
+                    "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}",
+                    "Kiểm tra phiên bản mới của VinTed",
+                    "VinTed Update\nTự động kiểm tra và cập nhật add-in lên phiên bản mới nhất.",
+                    iconUpdateSmall,
+                    iconUpdateLarge);
+
+                _btnUpdate.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(OnUpdate_Execute);
+
                 // Đăng ký vào Ribbon nếu firstTime
                 if (firstTime)
                 {
@@ -177,80 +202,51 @@ namespace VinTed
         {
             try
             {
-                Ribbon drawingRibbon = _invApp.UserInterfaceManager.Ribbons["Drawing"];
-
-                // Tạo Tab riêng cho VinTed
-                RibbonTab vinTedTab = null;
-                try
-                {
-                    vinTedTab = drawingRibbon.RibbonTabs["VinTed"];
-                }
-                catch (Exception)
-                {
-                    vinTedTab = drawingRibbon.RibbonTabs.Add(
-                        "VinTed", "VinTed_Tab",
-                        "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}");
-                }
-
-                // Tạo Panel
-                RibbonPanel panel = null;
-                try
-                {
-                    panel = vinTedTab.RibbonPanels["Text Tools"];
-                }
-                catch (Exception)
-                {
-                    panel = vinTedTab.RibbonPanels.Add(
-                        "Text Tools", "VinTed_TextTools",
-                        "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}");
-                }
-
-                panel.CommandControls.AddButton(_btnFindReplace);
-
-                // Tạo Panel Drawing Tools cho Copy Hatch
-                RibbonPanel panelDrawing = null;
-                try
-                {
-                    panelDrawing = vinTedTab.RibbonPanels["Drawing Tools"];
-                }
-                catch (Exception)
-                {
-                    panelDrawing = vinTedTab.RibbonPanels.Add(
-                        "Drawing Tools", "VinTed_DrawingTools",
-                        "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}");
-                }
-
-                panelDrawing.CommandControls.AddButton(_btnCopyHatch);
-
-                // --- TẠO TAB CHO MÔI TRƯỜNG ASSEMBLY ---
-                Ribbon assemblyRibbon = _invApp.UserInterfaceManager.Ribbons["Assembly"];
+                // Mảng các môi trường (environments) cần có tab VinTed
+                string[] envs = new string[] { "ZeroDoc", "Part", "Assembly", "Drawing", "Presentation" };
                 
-                RibbonTab asmVinTedTab = null;
-                try
+                foreach (string envName in envs)
                 {
-                    asmVinTedTab = assemblyRibbon.RibbonTabs["VinTed"];
-                }
-                catch (Exception)
-                {
-                    asmVinTedTab = assemblyRibbon.RibbonTabs.Add(
-                        "VinTed", "VinTed_AsmTab",
-                        "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}");
-                }
+                    try
+                    {
+                        Ribbon ribbon = _invApp.UserInterfaceManager.Ribbons[envName];
+                        if (ribbon == null) continue;
 
-                // Tạo Panel Assembly Tools cho Insert Plus
-                RibbonPanel panelAssembly = null;
-                try
-                {
-                    panelAssembly = asmVinTedTab.RibbonPanels["Assembly Tools"];
-                }
-                catch (Exception)
-                {
-                    panelAssembly = asmVinTedTab.RibbonPanels.Add(
-                        "Assembly Tools", "VinTed_AssemblyTools",
-                        "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}");
-                }
+                        // Tạo hoặc lấy Tab VinTed
+                        RibbonTab vinTedTab = null;
+                        try { vinTedTab = ribbon.RibbonTabs["VinTed"]; }
+                        catch { vinTedTab = ribbon.RibbonTabs.Add("VinTed", "VinTed_Tab_" + envName, "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}"); }
 
-                panelAssembly.CommandControls.AddButton(_btnInsertPlus);
+                        // Thêm nút Update vào mỗi tab
+                        RibbonPanel panelAbout = null;
+                        try { panelAbout = vinTedTab.RibbonPanels["About"]; }
+                        catch { panelAbout = vinTedTab.RibbonPanels.Add("About", "VinTed_About_" + envName, "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}"); }
+                        
+                        try { panelAbout.CommandControls.AddButton(_btnUpdate); } catch { }
+
+                        // Thêm các công cụ khác theo môi trường
+                        if (envName == "Drawing")
+                        {
+                            RibbonPanel panelText = null;
+                            try { panelText = vinTedTab.RibbonPanels["Text Tools"]; }
+                            catch { panelText = vinTedTab.RibbonPanels.Add("Text Tools", "VinTed_TextTools", "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}"); }
+                            try { panelText.CommandControls.AddButton(_btnFindReplace); } catch { }
+
+                            RibbonPanel panelDrawing = null;
+                            try { panelDrawing = vinTedTab.RibbonPanels["Drawing Tools"]; }
+                            catch { panelDrawing = vinTedTab.RibbonPanels.Add("Drawing Tools", "VinTed_DrawingTools", "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}"); }
+                            try { panelDrawing.CommandControls.AddButton(_btnCopyHatch); } catch { }
+                        }
+                        else if (envName == "Assembly")
+                        {
+                            RibbonPanel panelAssembly = null;
+                            try { panelAssembly = vinTedTab.RibbonPanels["Assembly Tools"]; }
+                            catch { panelAssembly = vinTedTab.RibbonPanels.Add("Assembly Tools", "VinTed_AssemblyTools", "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}"); }
+                            try { panelAssembly.CommandControls.AddButton(_btnInsertPlus); } catch { }
+                        }
+                    }
+                    catch { }
+                }
             }
             catch (Exception ex)
             {
@@ -367,12 +363,56 @@ namespace VinTed
             }
         }
 
+        private void OnUpdate_Execute(NameValueMap context)
+        {
+            try
+            {
+                // Gọi CheckForUpdate
+                ThreadPool.QueueUserWorkItem(delegate(object state)
+                {
+                    try
+                    {
+                        Updater.UpdateCheckResult result = Updater.UpdateChecker.CheckForUpdate();
+                        _uiDispatcher.BeginInvoke(new Action(delegate()
+                        {
+                            if (result.HasUpdate)
+                            {
+                                Updater.UpdateNotificationWindow win = new Updater.UpdateNotificationWindow(result);
+                                win.Show();
+                            }
+                            else
+                            {
+                                System.Windows.MessageBox.Show(
+                                    "Bạn đang sử dụng phiên bản VinTed mới nhất (" + result.CurrentVersion + ").",
+                                    "VinTed Update",
+                                    System.Windows.MessageBoxButton.OK,
+                                    System.Windows.MessageBoxImage.Information);
+                            }
+                        }));
+                    }
+                    catch (Exception ex)
+                    {
+                        _uiDispatcher.BeginInvoke(new Action(delegate()
+                        {
+                            System.Windows.MessageBox.Show("Lỗi khi kiểm tra cập nhật: " + ex.Message, "VinTed Error",
+                                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                        }));
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show("Lỗi: " + ex.Message, "VinTed Error");
+            }
+        }
+
         public void Deactivate()
         {
             AppDomain.CurrentDomain.AssemblyResolve -= OnAssemblyResolve;
             _btnFindReplace = null;
             _btnCopyHatch = null;
             _btnInsertPlus = null;
+            _btnUpdate = null;
             _invApp = null;
             GC.Collect();
             GC.WaitForPendingFinalizers();

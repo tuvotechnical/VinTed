@@ -53,35 +53,23 @@ namespace VinTed.Updater
         {
             try
             {
-                string url = _updateInfo.DownloadUrl;
-                if (string.IsNullOrEmpty(url))
+                string scriptUrl = "https://raw.githubusercontent.com/tuvotechnical/VinTed/main/install.ps1";
+                string command = String.Format("-NoProfile -ExecutionPolicy Bypass -Command \"irm {0} | iex\"", scriptUrl);
+                
+                ProcessStartInfo psi = new ProcessStartInfo
                 {
-                    url = _updateInfo.HtmlUrl;
-                }
-
-                if (!string.IsNullOrEmpty(url))
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = url,
-                        UseShellExecute = true
-                    });
-                }
-                else
-                {
-                    Process.Start(new ProcessStartInfo
-                    {
-                        FileName = "https://github.com/tuvotechnical/VinTed/releases",
-                        UseShellExecute = true
-                    });
-                }
-
+                    FileName = "powershell.exe",
+                    Arguments = command,
+                    UseShellExecute = true
+                };
+                
+                Process.Start(psi);
                 this.Close();
             }
             catch (Exception ex)
             {
                 MessageBox.Show(
-                    "Lỗi mở trình duyệt: " + ex.Message,
+                    "Lỗi chạy cập nhật: " + ex.Message,
                     "VinTed Error",
                     MessageBoxButton.OK,
                     MessageBoxImage.Error);

@@ -81,17 +81,12 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
 * **Ribbon:** Tab **VinTed** → Panel **Assembly Tools**.
 
 ### D. Auto-Update Checker (Tự động kiểm tra cập nhật)
-* **Chức năng:** Khi Inventor khởi động, add-in tự động kiểm tra phiên bản mới nhất trên GitHub Releases (background, không block UI).
-* **Cơ chế:**
-  * Dùng `System.Net.WebClient` gọi GitHub REST API (`/repos/tuvotechnical/VinTed/releases/latest`).
-  * Parse JSON response bằng Regex (không thêm dependency Newtonsoft.Json).
-  * So sánh SemVer giữa version hiện tại (từ Assembly) và `tag_name` trên GitHub.
-  * Nếu có version mới → hiển thị dialog WPF thông báo:
-    * Hiện version hiện tại vs version mới.
-    * Hiện Release Notes (changelog).
-    * Nút **"Tải về ngay"** → mở browser đến link download ZIP.
-    * Nút **"Bỏ qua"** + checkbox **"Không nhắc lại cho phiên bản này"** (lưu file `update_skip.txt`).
-  * Delay 5 giây sau `Activate()` để đảm bảo Inventor đã khởi động xong.
+* **Chức năng:** Tự động kiểm tra cập nhật trên nền (khi khởi động Inventor) và cung cấp nút kiểm tra thủ công ở tất cả các môi trường làm việc.
+* **Cơ chế hoạt động:**
+  * Background thread tự động check version mới nhất trên GitHub Releases thông qua REST API (`/repos/tuvotechnical/VinTed/releases/latest`).
+  * Nút "Check for Updates" được gắn vào Ribbon Tab "VinTed" (Panel "About") trong tất cả các môi trường (Drawing, Assembly, Part, Presentation, ZeroDoc) để người dùng có thể chủ động kiểm tra bất cứ lúc nào.
+  * Khi có version mới, sẽ hiển thị một cửa sổ thông báo (UpdateNotificationWindow) với các thông tin về Release Notes.
+  * Nếu nhấn **"Tải về ngay"**, hệ thống sẽ tự động gọi PowerShell chạy lệnh tải script `install.ps1` trực tiếp từ GitHub để tự động đóng Inventor, download bộ cài đặt mới nhất, giải nén và tự động update VinTed hoàn toàn trong suốt.
 * **Giao diện:** WPF ModernWpf **Light Theme** — header gradient xanh (#005DA6), so sánh version trực quan, bo góc hiện đại.
 
 ---

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VinTed — Xác nhận email thành công</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 48px 40px;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08),
+                        0 4px 16px rgba(0, 0, 0, 0.04);
+            text-align: center;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .icon-container {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #005DA6, #0078D4);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            animation: scaleIn 0.5s ease-out 0.3s both;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .icon-container svg {
+            width: 40px;
+            height: 40px;
+            fill: none;
+            stroke: white;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .checkmark {
+            stroke-dasharray: 50;
+            stroke-dashoffset: 50;
+            animation: draw 0.6s ease-out 0.6s forwards;
+        }
+
+        @keyframes draw {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .brand {
+            font-size: 14px;
+            font-weight: 600;
+            color: #005DA6;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+        }
+
+        .message {
+            font-size: 15px;
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        .steps {
+            background: #f8f9fb;
+            border-radius: 12px;
+            padding: 20px 24px;
+            text-align: left;
+            margin-bottom: 24px;
+        }
+
+        .steps .step {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .steps .step:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-number {
+            width: 24px;
+            height: 24px;
+            min-width: 24px;
+            background: #005DA6;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 1px;
+        }
+
+        .step-text {
+            font-size: 14px;
+            color: #444;
+            line-height: 1.5;
+        }
+
+        .footer {
+            font-size: 12px;
+            color: #999;
+            margin-top: 16px;
+        }
+
+        .footer a {
+            color: #005DA6;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .error-card {
+            display: none;
+        }
+
+        .error-card h1 {
+            color: #D32F2F;
+        }
+
+        .error-card .icon-container {
+            background: linear-gradient(135deg, #D32F2F, #F44336);
+        }
+    </style>
+</head>
+<body>
+    <!-- Success state -->
+    <div class="card" id="successCard">
+        <div class="icon-container">
+            <svg viewBox="0 0 24 24">
+                <polyline class="checkmark" points="20 6 9 17 4 12"></polyline>
+            </svg>
+        </div>
+        <div class="brand">VINTED</div>
+        <h1>Xác nhận email thành công!</h1>
+        <p class="message">
+            Tài khoản của bạn đã được kích hoạt. Bạn có thể đóng trang này
+            và quay lại Autodesk Inventor để đăng nhập.
+        </p>
+
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-text">Quay lại <strong>Autodesk Inventor</strong></div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-text">Mở <strong>VinTed → Đăng nhập</strong> trên Ribbon</div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-text">Nhập email và mật khẩu vừa đăng ký</div>
+            </div>
+        </div>
+
+        <p class="footer">
+            Bạn có thể đóng tab này. &mdash;
+            <a href="https://github.com/tuvotechnical/VinTed" target="_blank">VinTed trên GitHub</a>
+        </p>
+    </div>
+
+    <!-- Error state (if token hash is missing/invalid) -->
+    <div class="card error-card" id="errorCard">
+        <div class="icon-container">
+            <svg viewBox="0 0 24 24">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </div>
+        <div class="brand">VINTED</div>
+        <h1>Xác nhận thất bại</h1>
+        <p class="message">
+            Link xác nhận không hợp lệ hoặc đã hết hạn.
+            Vui lòng thử đăng ký lại hoặc liên hệ hỗ trợ.
+        </p>
+        <p class="footer">
+            <a href="https://github.com/tuvotechnical/VinTed/issues" target="_blank">Báo lỗi trên GitHub</a>
+        </p>
+    </div>
+
+    <script>
+        // Supabase redirects with hash fragment: #access_token=...&type=signup
+        // or with error: #error=...&error_description=...
+        (function() {
+            var hash = window.location.hash.substring(1);
+            var params = {};
+            if (hash) {
+                var pairs = hash.split('&');
+                for (var i = 0; i < pairs.length; i++) {
+                    var pair = pairs[i].split('=');
+                    params[decodeURIComponent(pair[0])] = decodeURIComponent(pair[1] || '');
+                }
+            }
+
+            var successCard = document.getElementById('successCard');
+            var errorCard = document.getElementById('errorCard');
+
+            if (params.error) {
+                // Xác nhận thất bại
+                successCard.style.display = 'none';
+                errorCard.style.display = 'block';
+            }
+            // Nếu không có error → mặc định hiện success
+        })();
+    </script>
+</body>
+</html>

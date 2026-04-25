@@ -93,9 +93,9 @@
                 <!-- Counter -->
                 <Border Margin="0,12,0,0" Background="#EBF5FF" CornerRadius="4" Padding="12,8">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="&#xE8C8;" FontFamily="Segoe MDL2 Assets" FontSize="14"
-                                   Foreground="{StaticResource VtAccentPrimary}" VerticalAlignment="Center"
-                                   Margin="0,0,8,0"/>
+                        <Path Data="M19 21H8V7h11m0-2H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2m-3-4H4a2 2 0 0 0-2 2v14h2V3h12z" 
+                              Fill="{StaticResource VtAccentPrimary}" Stretch="Uniform" Width="14" Height="14" 
+                              VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <TextBlock x:Name="lblCount" Text="Đã copy: 0 hatch" FontSize="12"
                                    FontWeight="SemiBold" Foreground="{StaticResource VtAccentPrimary}"
                                    VerticalAlignment="Center"/>
@@ -106,9 +106,13 @@
 
         <!-- Start Button -->
         <Border Grid.Row="2" Margin="24,14,24,0">
-            <Button x:Name="btnStart" Content="▶  Bắt đầu Copy Hatch"
-                    Click="BtnStart_Click" Style="{StaticResource VtBtnPrimary}"
-                    FontSize="13"/>
+            <Button x:Name="btnStart" Click="BtnStart_Click" Style="{StaticResource VtBtnPrimary}" FontSize="13">
+                <StackPanel Orientation="Horizontal">
+                    <Path Data="M10 16.5v-9l6 4.5M12 2A10 10 0 0 0 2 12a10 10 0 0 0 10 10a10 10 0 0 0 10-10A10 10 0 0 0 12 2" 
+                          Fill="White" Stretch="Uniform" Width="14" Height="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Bắt đầu Copy Hatch" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
         </Border>
 
         <!-- Status Bar -->

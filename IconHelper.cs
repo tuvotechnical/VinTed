@@ -63,40 +63,29 @@ namespace VinTed
         /// Parse SVG path data đơn giản và vẽ lên Bitmap.
         /// Hỗ trợ cơ bản: M, L, H, V, Z, C commands.
         /// </summary>
-        private static Bitmap RenderSvgPathToBitmap(string svgContent, int size, System.Drawing.Color foreColor, System.Drawing.Color backColor)
+        private static Bitmap RenderSvgPathToBitmap(string svgContent, int size, System.Drawing.Color defaultForeColor, System.Drawing.Color backColor)
         {
             try
             {
+                // Loại bỏ namespace để dễ parse XPath
+                string cleanSvg = System.Text.RegularExpressions.Regex.Replace(svgContent, "xmlns=\".*?\"", "");
+                System.Xml.XmlDocument doc = new System.Xml.XmlDocument();
+                doc.LoadXml(cleanSvg);
+
+                System.Xml.XmlNode svgNode = doc.SelectSingleNode("//svg");
+                if (svgNode == null) return null;
+
                 // Trích xuất viewBox
                 float vbWidth = 24, vbHeight = 24;
-                int vbStart = svgContent.IndexOf("viewBox=\"");
-                if (vbStart >= 0)
+                if (svgNode.Attributes != null && svgNode.Attributes["viewBox"] != null)
                 {
-                    vbStart += 9;
-                    int vbEnd = svgContent.IndexOf("\"", vbStart);
-                    if (vbEnd > vbStart)
+                    string vb = svgNode.Attributes["viewBox"].Value;
+                    string[] parts = vb.Split(new char[] { ' ', ',' }, StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 4)
                     {
-                        string vb = svgContent.Substring(vbStart, vbEnd - vbStart);
-                        string[] parts = vb.Split(' ');
-                        if (parts.Length == 4)
-                        {
-                            float.TryParse(parts[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out vbWidth);
-                            float.TryParse(parts[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out vbHeight);
-                        }
+                        float.TryParse(parts[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out vbWidth);
+                        float.TryParse(parts[3], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out vbHeight);
                     }
-                }
-
-                // Trích xuất path data
-                string pathData = ExtractPathData(svgContent);
-                if (String.IsNullOrEmpty(pathData))
-                {
-                    return null;
-                }
-
-                GraphicsPath gPath = ParseSvgPath(pathData);
-                if (gPath == null || gPath.PointCount == 0)
-                {
-                    return null;
                 }
 
                 Bitmap bmp = new Bitmap(size, size, PixelFormat.Format32bppArgb);
@@ -113,18 +102,86 @@ namespace VinTed
                     System.Drawing.Drawing2D.Matrix matrix = new System.Drawing.Drawing2D.Matrix();
                     matrix.Translate(offsetX, offsetY);
                     matrix.Scale(scale, scale);
-                    gPath.Transform(matrix);
+                    g.Transform = matrix;
 
-                    using (SolidBrush brush = new SolidBrush(foreColor))
-                    {
-                        g.FillPath(brush, gPath);
-                    }
+                    DrawSvgNode(svgNode, g, defaultForeColor);
                 }
                 return bmp;
             }
             catch (Exception)
             {
                 return null;
+            }
+        }
+
+        private static void DrawSvgNode(System.Xml.XmlNode node, Graphics g, System.Drawing.Color currentFill)
+        {
+            if (node.Attributes != null && node.Attributes["fill"] != null)
+            {
+                string fillStr = node.Attributes["fill"].Value;
+                if (fillStr.StartsWith("#"))
+                {
+                    try
+                    {
+                        currentFill = ColorTranslator.FromHtml(fillStr);
+                    }
+                    catch { }
+                }
+                else if (fillStr.Equals("none", StringComparison.OrdinalIgnoreCase))
+                {
+                    currentFill = Color.Transparent;
+                }
+            }
+
+            if (node.Name == "path" && currentFill != Color.Transparent)
+            {
+                if (node.Attributes["d"] != null)
+                {
+                    GraphicsPath path = ParseSvgPath(node.Attributes["d"].Value);
+                    if (path != null)
+                    {
+                        using (SolidBrush brush = new SolidBrush(currentFill))
+                        {
+                            g.FillPath(brush, path);
+                        }
+                    }
+                }
+            }
+            else if (node.Name == "circle" && currentFill != Color.Transparent)
+            {
+                float cx = 0, cy = 0, r = 0;
+                if (node.Attributes["cx"] != null) float.TryParse(node.Attributes["cx"].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out cx);
+                if (node.Attributes["cy"] != null) float.TryParse(node.Attributes["cy"].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out cy);
+                if (node.Attributes["r"] != null) float.TryParse(node.Attributes["r"].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out r);
+
+                if (r > 0)
+                {
+                    using (SolidBrush brush = new SolidBrush(currentFill))
+                    {
+                        g.FillEllipse(brush, cx - r, cy - r, r * 2, r * 2);
+                    }
+                }
+            }
+            else if (node.Name == "rect" && currentFill != Color.Transparent)
+            {
+                float x = 0, y = 0, w = 0, h = 0;
+                if (node.Attributes["x"] != null) float.TryParse(node.Attributes["x"].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out x);
+                if (node.Attributes["y"] != null) float.TryParse(node.Attributes["y"].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out y);
+                if (node.Attributes["width"] != null) float.TryParse(node.Attributes["width"].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out w);
+                if (node.Attributes["height"] != null) float.TryParse(node.Attributes["height"].Value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out h);
+
+                if (w > 0 && h > 0)
+                {
+                    using (SolidBrush brush = new SolidBrush(currentFill))
+                    {
+                        g.FillRectangle(brush, x, y, w, h);
+                    }
+                }
+            }
+
+            foreach (System.Xml.XmlNode child in node.ChildNodes)
+            {
+                DrawSvgNode(child, g, currentFill);
             }
         }
 

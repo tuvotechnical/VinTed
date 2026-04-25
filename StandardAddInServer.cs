@@ -43,9 +43,9 @@ namespace VinTed
                 stdole.IPictureDisp iconLarge = null;
                 try
                 {
-                    iconSmall = IconHelper.CreateIconFromIconify("fluent/find-replace-24-filled", 16,
+                    iconSmall = IconHelper.CreateIconFromIconify("flat-color-icons/search", 16,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
-                    iconLarge = IconHelper.CreateIconFromIconify("fluent/find-replace-24-filled", 32,
+                    iconLarge = IconHelper.CreateIconFromIconify("flat-color-icons/search", 32,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
                 }
                 catch (Exception) { }
@@ -69,9 +69,9 @@ namespace VinTed
                 stdole.IPictureDisp iconCopyHatchLarge = null;
                 try
                 {
-                    iconCopyHatchSmall = IconHelper.CreateIconFromIconify("mdi/format-paint", 16,
+                    iconCopyHatchSmall = IconHelper.CreateIconFromIconify("fluent-emoji-flat/paintbrush", 16,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
-                    iconCopyHatchLarge = IconHelper.CreateIconFromIconify("mdi/format-paint", 32,
+                    iconCopyHatchLarge = IconHelper.CreateIconFromIconify("fluent-emoji-flat/paintbrush", 32,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
                 }
                 catch (Exception) { }
@@ -93,9 +93,9 @@ namespace VinTed
                 stdole.IPictureDisp iconInsertLarge = null;
                 try
                 {
-                    iconInsertSmall = IconHelper.CreateIconFromIconify("fluent/add-circle-24-filled", 16,
+                    iconInsertSmall = IconHelper.CreateIconFromIconify("flat-color-icons/plus", 16,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
-                    iconInsertLarge = IconHelper.CreateIconFromIconify("fluent/add-circle-24-filled", 32,
+                    iconInsertLarge = IconHelper.CreateIconFromIconify("flat-color-icons/plus", 32,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
                 }
                 catch (Exception) { }
@@ -117,9 +117,9 @@ namespace VinTed
                 stdole.IPictureDisp iconUpdateLarge = null;
                 try
                 {
-                    iconUpdateSmall = IconHelper.CreateIconFromIconify("fluent/arrow-sync-circle-24-filled", 16,
+                    iconUpdateSmall = IconHelper.CreateIconFromIconify("flat-color-icons/synchronize", 16,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
-                    iconUpdateLarge = IconHelper.CreateIconFromIconify("fluent/arrow-sync-circle-24-filled", 32,
+                    iconUpdateLarge = IconHelper.CreateIconFromIconify("flat-color-icons/synchronize", 32,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
                 }
                 catch (Exception) { }

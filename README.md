@@ -23,6 +23,7 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
 * **Cơ chế triển khai:**
   * Biên dịch qua script PowerShell `build.ps1`.
   * Deploy tự động vào `%AppData%\Autodesk\ApplicationPlugins\VinTed`.
+* **Quản lý Icon:** Tự động parse và render SVG đa sắc (multi-color) in-memory từ Iconify API, không sử dụng file ảnh vật lý.
 * **Entry Point:** Class `StandardAddInServer` (`ApplicationAddInServer`, `[ComVisible(true)]`).
   * Đăng ký Ribbon Tab **VinTed** → Panel **Text Tools** + Panel **Drawing Tools** trong môi trường Drawing.
   * Tích hợp `AppDomain.AssemblyResolve` handler để Inventor CLR tìm thấy ModernWpf.dll.

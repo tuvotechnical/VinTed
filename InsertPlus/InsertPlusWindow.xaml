@@ -5,7 +5,7 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         ui:ThemeManager.RequestedTheme="Light"
         Title="VinTed — Insert Plus"
-        Width="380" Height="480"
+        Width="380" SizeToContent="Height"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
         ResizeMode="NoResize"
@@ -61,7 +61,7 @@
         </Border>
 
         <!-- Main Logic -->
-        <StackPanel Grid.Row="1" Margin="24,20,24,0">
+        <StackPanel Grid.Row="1" Margin="24,20,24,24">
             
             <!-- Step 1: Source -->
             <TextBlock Text="BƯỚC 1: CHỌN NGUỒN" Style="{StaticResource VtSectionLabel}" Margin="0,0,0,12"/>

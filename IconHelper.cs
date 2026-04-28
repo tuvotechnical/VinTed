@@ -40,6 +40,37 @@ namespace VinTed
             return CreateFallbackIcon(iconName, size, foreColor, backColor);
         }
 
+        /// <summary>
+        /// Đọc nội dung SVG từ file cục bộ và render thành Bitmap.
+        /// </summary>
+        public static stdole.IPictureDisp CreateIconFromSvgFile(string filePath, int size, System.Drawing.Color foreColor, System.Drawing.Color backColor)
+        {
+            try
+            {
+                if (System.IO.File.Exists(filePath))
+                {
+                    string svgData = System.IO.File.ReadAllText(filePath);
+                    if (!String.IsNullOrEmpty(svgData))
+                    {
+                        Bitmap bmp = RenderSvgPathToBitmap(svgData, size, foreColor, backColor);
+                        if (bmp != null)
+                        {
+                            return ConvertBitmapToIPictureDisp(bmp);
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Fallback silently
+            }
+
+            // Fallback: vẽ icon chữ cái đầu nếu lỗi
+            string iconName = "V";
+            try { iconName = System.IO.Path.GetFileNameWithoutExtension(filePath); } catch { }
+            return CreateFallbackIcon(iconName, size, foreColor, backColor);
+        }
+
         private static string DownloadSvgFromIconify(string iconName)
         {
             try

@@ -23,7 +23,7 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
 * **Cơ chế triển khai:**
   * Biên dịch qua script PowerShell `build.ps1`.
   * Deploy tự động vào `%AppData%\Autodesk\ApplicationPlugins\VinTed`.
-* **Quản lý Icon:** Tự động parse và render SVG đa sắc (multi-color) in-memory từ Iconify API, không sử dụng file ảnh vật lý.
+* **Quản lý Icon:** Lưu trữ và quản lý các file SVG tải sẵn trong thư mục `Assets`. Hệ thống tự động parse và render các file đa sắc (multi-color) in-memory lúc runtime. Giúp cho Add-in hoạt động nhanh chóng, offline và làm tiền đề lưu trữ tài nguyên tĩnh cho việc tích hợp WebView2 sau này.
 * **Entry Point:** Class `StandardAddInServer` (`ApplicationAddInServer`, `[ComVisible(true)]`).
   * Đăng ký Ribbon Tab **VinTed** → Panel **Text Tools** + Panel **Drawing Tools** trong môi trường Drawing.
   * Tích hợp `AppDomain.AssemblyResolve` handler để Inventor CLR tìm thấy ModernWpf.dll.
@@ -90,6 +90,23 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
   * Nếu nhấn **"Tải về ngay"**, hệ thống sẽ tự động gọi PowerShell chạy lệnh tải script `install.ps1` trực tiếp từ GitHub để tự động đóng Inventor, download bộ cài đặt mới nhất, giải nén và tự động update VinTed hoàn toàn trong suốt.
 * **Giao diện:** WPF ModernWpf **Light Theme** — header gradient xanh (#005DA6), so sánh version trực quan, bo góc hiện đại.
 
+### E. License Management (Quản lý License)
+* **Chức năng:** Hệ thống đăng nhập, mua license và xác thực bản quyền tích hợp trực tiếp trong Add-in.
+* **Backend:** Supabase (Auth + Postgres + Edge Functions) — hoàn toàn miễn phí.
+* **Thanh toán:** Chuyển khoản ngân hàng qua QR code SePay — tự động xác nhận bằng Webhook.
+* **Luồng hoạt động:**
+  1. Người dùng nhấn nút **Account** trên Ribbon → hiện form đăng nhập/đăng ký.
+  2. Sau đăng nhập, chọn gói license (1 ngày / 1 tháng / 1 năm) → hiện QR code thanh toán.
+  3. Quét QR bằng app ngân hàng → chuyển khoản → SePay webhook tự động xác nhận → license được kích hoạt.
+  4. Mỗi khi dùng tính năng, Add-in kiểm tra license. Nếu hết hạn → yêu cầu mua/gia hạn.
+* **Bảo mật:**
+  * Token lưu bằng Windows DPAPI (chỉ user hiện tại đọc được).
+  * Device fingerprint (SHA256 MachineGuid + SID) để giới hạn thiết bị.
+  * Hỗ trợ offline grace period (24h–7 ngày tùy gói).
+  * Chỉ chứa `anon key` trong Add-in — KHÔNG có service_role key hoặc SePay API key.
+* **Giao diện:** 3 cửa sổ WPF ModernWpf Light Theme — LoginWindow, BuyLicenseWindow (QR + countdown), AccountWindow.
+* **Ribbon:** Tab **VinTed** → Panel **About** → nút **Account** (tất cả môi trường).
+
 ---
 
 ## 3. Quản lý Version
@@ -109,6 +126,7 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
 | `ModernWpf.Controls` | 0.9.6 (net45) | Extended WPF controls |
 | `stdole` | (Inventor Bin) | `IPictureDisp` cho icon |
 | `System.Windows.Forms` | (.NET) | `AxHost` icon conversion |
+| `System.Security` | (.NET) | DPAPI (`ProtectedData`) cho License token |
 
 ---
 

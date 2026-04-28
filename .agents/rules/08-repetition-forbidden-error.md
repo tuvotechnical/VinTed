@@ -122,6 +122,19 @@ trigger: always_on
   ```
 - **Quy tắc:** Khi port iLogic VB sang C#, nếu VB code dùng `Object` type với `.PropertyName`, phải dùng reflection `InvokeMember` trong C# — KHÔNG giả định property tồn tại qua early binding.
 
+## ERR-12: ModernWpf NullReferenceException khi mở WPF Window — ThemeResources thiếu
+- **Lỗi:** `Object reference not set to an instance of an object` tại `ModernWpf.ThemeManager.ApplyRequestedTheme(FrameworkElement element)`
+- **Nguyên nhân:** Window XAML có `ui:WindowHelper.UseModernWindowStyle="True"` và `ui:ThemeManager.RequestedTheme="Light"` nhưng **thiếu** `ui:ThemeResources` và `ui:XamlControlsResources` trong `MergedDictionaries`. ModernWpf cần resource dictionaries này được load trước khi apply theme.
+- **Fix:** Thêm 2 dòng đầu tiên trong `MergedDictionaries`:
+  ```xml
+  <ResourceDictionary.MergedDictionaries>
+      <ui:ThemeResources RequestedTheme="Light"/>
+      <ui:XamlControlsResources/>
+      <!-- rồi mới đến ThemeColors.xaml, ControlStyles.xaml -->
+  </ResourceDictionary.MergedDictionaries>
+  ```
+- **Quy tắc:** Mọi WPF Window dùng ModernWpf **BẮT BUỘC** phải có `ui:ThemeResources` + `ui:XamlControlsResources` trong MergedDictionaries. Tham khảo `FindReplaceWindow.xaml` làm template chuẩn.
+
 ---
 
 ## QUY TẮC CHUNG RÚT RA

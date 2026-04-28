@@ -34,6 +34,7 @@
       <HintPath>packages\ModernWpfUI\lib\net45\ModernWpf.Controls.dll</HintPath>
     </Reference>
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Security" />
     <Reference Include="stdole">
       <HintPath>C:\Program Files\Autodesk\Inventor 2023\Bin\stdole.dll</HintPath>
       <EmbedInteropTypes>false</EmbedInteropTypes>
@@ -65,6 +66,23 @@
     <Compile Include="InsertPlus\InsertPlusWindow.xaml.cs">
       <DependentUpon>InsertPlusWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Licensing\LicenseConfig.cs" />
+    <Compile Include="Licensing\LicenseInfo.cs" />
+    <Compile Include="Licensing\DeviceFingerprint.cs" />
+    <Compile Include="Licensing\SecureTokenStore.cs" />
+    <Compile Include="Licensing\SupabaseAuth.cs" />
+    <Compile Include="Licensing\LicenseClient.cs" />
+    <Compile Include="Licensing\LicenseCache.cs" />
+    <Compile Include="Licensing\LicenseManager.cs" />
+    <Compile Include="Licensing\UI\LoginWindow.xaml.cs">
+      <DependentUpon>LoginWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Licensing\UI\BuyLicenseWindow.xaml.cs">
+      <DependentUpon>BuyLicenseWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="Licensing\UI\AccountWindow.xaml.cs">
+      <DependentUpon>AccountWindow.xaml</DependentUpon>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Page Include="Themes\ThemeColors.xaml">
@@ -88,6 +106,18 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="InsertPlus\InsertPlusWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Licensing\UI\LoginWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Licensing\UI\BuyLicenseWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="Licensing\UI\AccountWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

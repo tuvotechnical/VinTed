@@ -22,6 +22,7 @@ namespace VinTed
         private ButtonDefinition _btnCopyHatch;
         private ButtonDefinition _btnInsertPlus;
         private ButtonDefinition _btnUpdate;
+        private ButtonDefinition _btnAccount;
         private static string _addinFolder;
         private System.Windows.Threading.Dispatcher _uiDispatcher;
 
@@ -43,9 +44,10 @@ namespace VinTed
                 stdole.IPictureDisp iconLarge = null;
                 try
                 {
-                    iconSmall = IconHelper.CreateIconFromIconify("flat-color-icons/search", 16,
+                    string iconPath = System.IO.Path.Combine(_addinFolder, "Assets", "search.svg");
+                    iconSmall = IconHelper.CreateIconFromSvgFile(iconPath, 16,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
-                    iconLarge = IconHelper.CreateIconFromIconify("flat-color-icons/search", 32,
+                    iconLarge = IconHelper.CreateIconFromSvgFile(iconPath, 32,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
                 }
                 catch (Exception) { }
@@ -69,9 +71,10 @@ namespace VinTed
                 stdole.IPictureDisp iconCopyHatchLarge = null;
                 try
                 {
-                    iconCopyHatchSmall = IconHelper.CreateIconFromIconify("fluent-emoji-flat/paintbrush", 16,
+                    string iconPath = System.IO.Path.Combine(_addinFolder, "Assets", "paintbrush.svg");
+                    iconCopyHatchSmall = IconHelper.CreateIconFromSvgFile(iconPath, 16,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
-                    iconCopyHatchLarge = IconHelper.CreateIconFromIconify("fluent-emoji-flat/paintbrush", 32,
+                    iconCopyHatchLarge = IconHelper.CreateIconFromSvgFile(iconPath, 32,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
                 }
                 catch (Exception) { }
@@ -93,9 +96,10 @@ namespace VinTed
                 stdole.IPictureDisp iconInsertLarge = null;
                 try
                 {
-                    iconInsertSmall = IconHelper.CreateIconFromIconify("flat-color-icons/plus", 16,
+                    string iconPath = System.IO.Path.Combine(_addinFolder, "Assets", "plus.svg");
+                    iconInsertSmall = IconHelper.CreateIconFromSvgFile(iconPath, 16,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
-                    iconInsertLarge = IconHelper.CreateIconFromIconify("flat-color-icons/plus", 32,
+                    iconInsertLarge = IconHelper.CreateIconFromSvgFile(iconPath, 32,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
                 }
                 catch (Exception) { }
@@ -117,9 +121,10 @@ namespace VinTed
                 stdole.IPictureDisp iconUpdateLarge = null;
                 try
                 {
-                    iconUpdateSmall = IconHelper.CreateIconFromIconify("flat-color-icons/synchronize", 16,
+                    string iconPath = System.IO.Path.Combine(_addinFolder, "Assets", "synchronize.svg");
+                    iconUpdateSmall = IconHelper.CreateIconFromSvgFile(iconPath, 16,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
-                    iconUpdateLarge = IconHelper.CreateIconFromIconify("flat-color-icons/synchronize", 32,
+                    iconUpdateLarge = IconHelper.CreateIconFromSvgFile(iconPath, 32,
                         System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
                 }
                 catch (Exception) { }
@@ -136,6 +141,31 @@ namespace VinTed
 
                 _btnUpdate.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(OnUpdate_Execute);
 
+                // Tạo ButtonDefinition cho Account
+                stdole.IPictureDisp iconAccountSmall = null;
+                stdole.IPictureDisp iconAccountLarge = null;
+                try
+                {
+                    string iconPath = System.IO.Path.Combine(_addinFolder, "Assets", "manager.svg");
+                    iconAccountSmall = IconHelper.CreateIconFromSvgFile(iconPath, 16,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                    iconAccountLarge = IconHelper.CreateIconFromSvgFile(iconPath, 32,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                }
+                catch (Exception) { }
+
+                _btnAccount = ctrlDefs.AddButtonDefinition(
+                    "Account",
+                    "VinTed_Account",
+                    CommandTypesEnum.kEditMaskCmdType,
+                    "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}",
+                    "Quản lý tài khoản và license VinTed",
+                    "VinTed Account\nĐăng nhập, mua license, xem trạng thái tài khoản.",
+                    iconAccountSmall,
+                    iconAccountLarge);
+
+                _btnAccount.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(OnAccount_Execute);
+
                 // Đăng ký vào Ribbon nếu firstTime
                 if (firstTime)
                 {
@@ -144,6 +174,9 @@ namespace VinTed
 
                 // Kiểm tra cập nhật (background, không block Inventor)
                 CheckForUpdateAsync();
+
+                // Kiểm tra license (background, không block Inventor)
+                CheckLicenseAsync();
             }
             catch (Exception ex)
             {
@@ -223,6 +256,7 @@ namespace VinTed
                         catch { panelAbout = vinTedTab.RibbonPanels.Add("About", "VinTed_About_" + envName, "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}"); }
                         
                         try { panelAbout.CommandControls.AddButton(_btnUpdate); } catch { }
+                        try { panelAbout.CommandControls.AddButton(_btnAccount); } catch { }
 
                         // Thêm các công cụ khác theo môi trường
                         if (envName == "Drawing")
@@ -273,6 +307,12 @@ namespace VinTed
                     return;
                 }
 
+                if (!Licensing.LicenseManager.RequireActive())
+                {
+                    ShowLicenseRequired();
+                    return;
+                }
+
                 DrawingDocument drawDoc = (DrawingDocument)activeDoc;
                 FindReplace.FindReplaceWindow window = new FindReplace.FindReplaceWindow(_invApp, drawDoc);
                 window.Show();
@@ -308,6 +348,12 @@ namespace VinTed
                     return;
                 }
 
+                if (!Licensing.LicenseManager.RequireActive())
+                {
+                    ShowLicenseRequired();
+                    return;
+                }
+
                 DrawingDocument drawDoc = (DrawingDocument)activeDoc;
                 CopyHatch.CopyHatchWindow window = new CopyHatch.CopyHatchWindow(_invApp, drawDoc);
                 window.Show();
@@ -340,6 +386,12 @@ namespace VinTed
                         "VinTed",
                         System.Windows.MessageBoxButton.OK,
                         System.Windows.MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!Licensing.LicenseManager.RequireActive())
+                {
+                    ShowLicenseRequired();
                     return;
                 }
 
@@ -406,6 +458,108 @@ namespace VinTed
             }
         }
 
+        /// <summary>
+        /// Kiểm tra license trên background thread.
+        /// Nếu chưa đăng nhập hoặc hết hạn, hiện cửa sổ.
+        /// </summary>
+        private void CheckLicenseAsync()
+        {
+            ThreadPool.QueueUserWorkItem(delegate(object state)
+            {
+                try
+                {
+                    Thread.Sleep(3000);
+                    Licensing.LicenseInfo license = Licensing.LicenseManager.CheckLicense();
+
+                    if (license != null && !license.IsActive)
+                    {
+                        // Không tự động mở window — chỉ log để khi dùng feature sẽ yêu cầu
+                    }
+                }
+                catch (Exception)
+                {
+                    // Im lặng — license check không được crash Inventor
+                }
+            });
+        }
+
+        private void OnAccount_Execute(NameValueMap context)
+        {
+            try
+            {
+                if (!Licensing.LicenseManager.IsLoggedIn())
+                {
+                    Licensing.UI.LoginWindow loginWin = new Licensing.UI.LoginWindow();
+                    loginWin.OnLoginSuccess += delegate()
+                    {
+                        // Sau khi đăng nhập → check license + mở Account window
+                        ThreadPool.QueueUserWorkItem(delegate(object state)
+                        {
+                            Licensing.LicenseManager.CheckLicense();
+                            _uiDispatcher.BeginInvoke(new Action(delegate()
+                            {
+                                Licensing.UI.AccountWindow accWin = new Licensing.UI.AccountWindow();
+                                accWin.Show();
+                            }));
+                        });
+                    };
+                    loginWin.Show();
+                }
+                else
+                {
+                    Licensing.UI.AccountWindow accWin = new Licensing.UI.AccountWindow();
+                    accWin.Show();
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show("Lỗi: " + ex.Message, "VinTed Error",
+                    System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        /// <summary>
+        /// Hiện thông báo yêu cầu license khi tính năng bị khóa.
+        /// </summary>
+        private void ShowLicenseRequired()
+        {
+            if (!Licensing.LicenseManager.IsLoggedIn())
+            {
+                System.Windows.MessageBoxResult result = System.Windows.MessageBox.Show(
+                    "Tính năng này yêu cầu license VinTed.\nBạn muốn đăng nhập ngay?",
+                    "VinTed License",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Information);
+
+                if (result == System.Windows.MessageBoxResult.Yes)
+                {
+                    Licensing.UI.LoginWindow loginWin = new Licensing.UI.LoginWindow();
+                    loginWin.OnLoginSuccess += delegate()
+                    {
+                        ThreadPool.QueueUserWorkItem(delegate(object state)
+                        {
+                            Licensing.LicenseManager.CheckLicense();
+                        });
+                    };
+                    loginWin.Show();
+                }
+            }
+            else
+            {
+                System.Windows.MessageBoxResult result = System.Windows.MessageBox.Show(
+                    "License VinTed chưa kích hoạt hoặc đã hết hạn.\nBạn muốn mua/gia hạn license?",
+                    "VinTed License",
+                    System.Windows.MessageBoxButton.YesNo,
+                    System.Windows.MessageBoxImage.Information);
+
+                if (result == System.Windows.MessageBoxResult.Yes)
+                {
+                    Licensing.UI.BuyLicenseWindow buyWin = new Licensing.UI.BuyLicenseWindow();
+                    buyWin.Show();
+                }
+            }
+        }
+
         public void Deactivate()
         {
             AppDomain.CurrentDomain.AssemblyResolve -= OnAssemblyResolve;
@@ -413,6 +567,7 @@ namespace VinTed
             _btnCopyHatch = null;
             _btnInsertPlus = null;
             _btnUpdate = null;
+            _btnAccount = null;
             _invApp = null;
             GC.Collect();
             GC.WaitForPendingFinalizers();

@@ -5,7 +5,7 @@
         ui:WindowHelper.UseModernWindowStyle="True"
         ui:ThemeManager.RequestedTheme="Light"
         Title="VinTed — Find &amp; Replace"
-        Width="500" Height="620"
+        Width="500" SizeToContent="Height"
         WindowStartupLocation="CenterScreen"
         Topmost="True"
         ResizeMode="NoResize"

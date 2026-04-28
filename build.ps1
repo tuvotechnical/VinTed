@@ -120,6 +120,7 @@ if (!(Test-Path $appDataFolder)) {
 }
 Copy-Item "$buildDir\*.*" -Destination $appDataFolder -Force -ErrorAction SilentlyContinue
 Copy-Item "VinTed.addin" -Destination $appDataFolder -Force
+if (Test-Path ".\Assets") { Copy-Item ".\Assets" -Destination "$appDataFolder\Assets" -Recurse -Force }
 
 Write-Host "  -> Da deploy vao: $appDataFolder" -ForegroundColor Green
 Write-Host ""

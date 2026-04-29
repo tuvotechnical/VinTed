@@ -135,6 +135,20 @@ trigger: always_on
   ```
 - **Quy tắc:** Mọi WPF Window dùng ModernWpf **BẮT BUỘC** phải có `ui:ThemeResources` + `ui:XamlControlsResources` trong MergedDictionaries. Tham khảo `FindReplaceWindow.xaml` làm template chuẩn.
 
+## ERR-13: Build thiếu package ModernWpfUI nên XAML không nhận attached property
+- **Lỗi:** `warning MSB3245: Could not resolve this reference. Could not locate the assembly "ModernWpf"`; sau đó `error MC3072: The property 'WindowHelper.UseModernWindowStyle' does not exist in XML namespace 'http://schemas.modernwpf.com/2019'.`
+- **Nguyên nhân:** Thư mục `packages\ModernWpfUI\lib\net45` không tồn tại trước khi build. MSBuild không load được assembly ModernWpf, nên XAML compiler không resolve được attached property của ModernWpf.
+- **Fix:** `build.ps1` phải kiểm tra `ModernWpf.dll` và `ModernWpf.Controls.dll` trước khi gọi MSBuild. Nếu thiếu, tự tải `nuget.exe` và chạy:
+  ```powershell
+  .\nuget.exe install ModernWpfUI -Version 0.9.6 -OutputDirectory .\packages -ExcludeVersion -NonInteractive
+  ```
+- **Quy tắc:** Không giả định thư mục `packages` đã tồn tại. Build script phải tự restore dependency bắt buộc trước khi compile.
+
+## ERR-14: `commit.ps1` báo hoàn tất dù thiếu Git/GitHub auth
+- **Lỗi:** `git : The term 'git' is not recognized as the name of a cmdlet...`; sau đó script vẫn in `Da push len GitHub` và `HOAN TAT PIPELINE`. Đồng thời `gh CLI khong co` và `KHONG TIM THAY GITHUB_TOKEN` nên Release không được tạo. Khi gọi trực tiếp `git.exe`, có thể gặp thêm `Author identity unknown` nếu repo chưa cấu hình `user.name` / `user.email`.
+- **Nguyên nhân:** Máy build không có `git.exe` trong `PATH`, không có `gh` CLI hoặc `GITHUB_TOKEN`; `commit.ps1` chưa dừng pipeline khi lệnh `git` không tồn tại hoặc release auth thiếu. Repo-local Git identity cũng chưa được set.
+- **Fix:** Trước khi chạy commit/release phải kiểm tra sẵn `git`, `gh` hoặc `GITHUB_TOKEN`. Nếu thiếu, dừng script với exit code khác 0 hoặc dùng MCP GitHub/API đã xác thực để tạo commit/release. Nếu chỉ thiếu identity, set repo-local `git config user.name` và `git config user.email`. Không tin vào dòng `HOAN TAT PIPELINE` nếu log có `CommandNotFoundException`.
+
 ---
 
 ## QUY TẮC CHUNG RÚT RA

@@ -64,6 +64,7 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
   * Sử dụng `CommandManager.Pick(kDrawingCurveSegmentFilter)` để chọn cạnh.
   * Truy xuất `SurfaceBody` từ `DrawingCurve.ModelGeometry` (Edge → Face → SurfaceBody).
   * Duyệt `DrawingView.HatchRegions` để tìm hatch region khớp với SurfaceBody.
+  * Nếu chọn cạnh không có hatch, hiển thị cảnh báo và tiếp tục cho chọn lại; chỉ nhấn **ESC** mới kết thúc quy trình.
   * Tự động tắt `ByMaterial` trước khi áp dụng pattern mới.
 * **Giao diện:** WPF ModernWpf **Light Theme** — header gradient xanh, hướng dẫn 3 bước trực quan, bộ đếm hatch đã copy, status bar realtime.
 * **Yêu cầu:** Inventor 2022+ (API `HatchRegions` khả dụng từ 2022).
@@ -86,6 +87,7 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
 * **Cơ chế hoạt động:**
   * Background thread tự động check version mới nhất trên GitHub Releases thông qua REST API (`/repos/tuvotechnical/VinTed/releases/latest`).
   * Nút "Check for Updates" được gắn vào Ribbon Tab "VinTed" (Panel "About") trong tất cả các môi trường (Drawing, Assembly, Part, Presentation, ZeroDoc) để người dùng có thể chủ động kiểm tra bất cứ lúc nào.
+  * Chuẩn hóa tag GitHub và version trong assembly theo SemVer (`x.y.z`) trước khi so sánh/hiển thị, tránh lỗi nhận nhầm `1.1.5` thành `1.1.15` hoặc các tag có tiền tố/ký tự phụ.
   * Khi có version mới, sẽ hiển thị một cửa sổ thông báo (UpdateNotificationWindow) với các thông tin về Release Notes.
   * Nếu nhấn **"Tải về ngay"**, hệ thống sẽ tự động gọi PowerShell chạy lệnh tải script `install.ps1` trực tiếp từ GitHub để tự động đóng Inventor, download bộ cài đặt mới nhất, giải nén và tự động update VinTed hoàn toàn trong suốt.
 * **Giao diện:** WPF ModernWpf **Light Theme** — header gradient xanh (#005DA6), so sánh version trực quan, bo góc hiện đại.
@@ -114,6 +116,7 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
 * **Nguồn duy nhất:** File `version.json` ở root project chứa version hiện tại (SemVer: `x.y.z`).
 * **Tự động inject:** Script `build.ps1` đọc `version.json` và cập nhật `AssemblyInfo.cs` trước khi build.
 * **Bump version:** Script `commit.ps1` tự động tăng version theo tham số (`-BumpType patch|minor|major`).
+* **Auto-update:** `UpdateChecker` luôn chuẩn hóa version về 3 thành phần số trước khi so sánh, chỉ báo update khi latest thực sự lớn hơn current.
 
 ---
 
@@ -140,13 +143,14 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 
 **Quá trình script thực hiện:**
 1. Đọc version từ `version.json` → inject vào `AssemblyInfo.cs`.
-2. Đóng tiến trình Inventor (nếu đang chạy) để giải phóng file.
-3. Dọn dẹp thư mục Build (`bin\Release`).
-4. Gọi `MSBuild` để compile `VinTed.csproj` (Release).
-5. Dọn dẹp DLL hệ thống (`mscorlib.dll`, `.nlp`) và thư mục ngôn ngữ — tránh crash Inventor.
-6. Copy `ModernWpf.dll` + `ModernWpf.Controls.dll` vào output.
-7. Tạo/cập nhật file manifest `VinTed.addin`.
-8. Deploy tất cả vào `%AppData%\Autodesk\ApplicationPlugins\VinTed`.
+2. Kiểm tra/restore thư viện `ModernWpf` + `ModernWpf.Controls` vào `packages\ModernWpfUI\lib\net45` nếu thiếu.
+3. Đóng tiến trình Inventor (nếu đang chạy) để giải phóng file.
+4. Dọn dẹp thư mục Build (`bin\Release`).
+5. Gọi `MSBuild` để compile `VinTed.csproj` (Release).
+6. Dọn dẹp DLL hệ thống (`mscorlib.dll`, `.nlp`) và thư mục ngôn ngữ — tránh crash Inventor.
+7. Copy `ModernWpf.dll` + `ModernWpf.Controls.dll` vào output.
+8. Tạo/cập nhật file manifest `VinTed.addin`.
+9. Deploy tất cả vào `%AppData%\Autodesk\ApplicationPlugins\VinTed`.
 
 ---
 

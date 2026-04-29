@@ -110,8 +110,7 @@ namespace VinTed.Updater
         public static string GetCurrentVersion()
         {
             Version ver = Assembly.GetExecutingAssembly().GetName().Version;
-            // Format: Major.Minor.Build (bỏ Revision)
-            return String.Format("{0}.{1}.{2}", ver.Major, ver.Minor, ver.Build);
+            return NormalizeVersion(String.Format("{0}.{1}.{2}", ver.Major, ver.Minor, ver.Build));
         }
 
         /// <summary>
@@ -144,8 +143,11 @@ namespace VinTed.Updater
                         return result;
                     }
 
-                    // Loại bỏ prefix "v" nếu có
-                    string latestVersion = tagName.TrimStart('v', 'V');
+                    string latestVersion = NormalizeVersion(tagName);
+                    if (string.IsNullOrEmpty(latestVersion))
+                    {
+                        return result;
+                    }
                     result.LatestVersion = latestVersion;
 
                     // Parse release notes
@@ -184,7 +186,39 @@ namespace VinTed.Updater
                 // Bỏ qua mọi lỗi — update check không được làm crash Inventor
             }
 
+            if (string.IsNullOrEmpty(result.LatestVersion))
+            {
+                result.LatestVersion = result.CurrentVersion;
+            }
+
             return result;
+        }
+
+        /// <summary>
+        /// Chuẩn hóa chuỗi version/tag về SemVer 3 phần số x.y.z.
+        /// Ví dụ: v1.1.5, 1.1.5.0, release-1.1.5-hotfix đều trả về 1.1.5.
+        /// </summary>
+        private static string NormalizeVersion(string versionText)
+        {
+            if (string.IsNullOrEmpty(versionText))
+            {
+                return null;
+            }
+
+            Match match = Regex.Match(versionText, "(\\d+)\\.(\\d+)\\.(\\d+)");
+            if (!match.Success)
+            {
+                return null;
+            }
+
+            int major = 0;
+            int minor = 0;
+            int patch = 0;
+            if (!int.TryParse(match.Groups[1].Value, out major)) return null;
+            if (!int.TryParse(match.Groups[2].Value, out minor)) return null;
+            if (!int.TryParse(match.Groups[3].Value, out patch)) return null;
+
+            return String.Format("{0}.{1}.{2}", major, minor, patch);
         }
 
         /// <summary>
@@ -194,26 +228,16 @@ namespace VinTed.Updater
         {
             try
             {
-                string[] currentParts = current.Split('.');
-                string[] latestParts = latest.Split('.');
-
-                int maxLen = Math.Max(currentParts.Length, latestParts.Length);
-                for (int i = 0; i < maxLen; i++)
+                string normalizedCurrent = NormalizeVersion(current);
+                string normalizedLatest = NormalizeVersion(latest);
+                if (string.IsNullOrEmpty(normalizedCurrent) || string.IsNullOrEmpty(normalizedLatest))
                 {
-                    int c = 0;
-                    int l = 0;
-                    if (i < currentParts.Length)
-                    {
-                        int.TryParse(currentParts[i], out c);
-                    }
-                    if (i < latestParts.Length)
-                    {
-                        int.TryParse(latestParts[i], out l);
-                    }
-                    if (l > c) return true;
-                    if (l < c) return false;
+                    return false;
                 }
-                return false;
+
+                Version currentVersion = new Version(normalizedCurrent);
+                Version latestVersion = new Version(normalizedLatest);
+                return latestVersion.CompareTo(currentVersion) > 0;
             }
             catch (Exception)
             {

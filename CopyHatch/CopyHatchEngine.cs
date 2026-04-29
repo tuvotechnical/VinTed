@@ -15,6 +15,40 @@ namespace VinTed.CopyHatch
         private readonly Application _invApp;
         private readonly DrawingDocument _drawDoc;
 
+        private enum HatchPickStatus
+        {
+            Found,
+            Cancelled,
+            Retry
+        }
+
+        private sealed class HatchPickResult
+        {
+            public HatchPickStatus Status { get; private set; }
+            public DrawingViewHatchRegion Hatch { get; private set; }
+
+            private HatchPickResult(HatchPickStatus status, DrawingViewHatchRegion hatch)
+            {
+                Status = status;
+                Hatch = hatch;
+            }
+
+            public static HatchPickResult Found(DrawingViewHatchRegion hatch)
+            {
+                return new HatchPickResult(HatchPickStatus.Found, hatch);
+            }
+
+            public static HatchPickResult Cancelled()
+            {
+                return new HatchPickResult(HatchPickStatus.Cancelled, null);
+            }
+
+            public static HatchPickResult Retry()
+            {
+                return new HatchPickResult(HatchPickStatus.Retry, null);
+            }
+        }
+
         /// <summary>
         /// Đếm số lượng hatch đã copy thành công.
         /// </summary>
@@ -34,12 +68,21 @@ namespace VinTed.CopyHatch
         public void Execute()
         {
             // BƯỚC 1: Chọn source hatch qua cạnh
-            DrawingViewHatchRegion sourceHatch = PickHatchByCurve(
-                "BƯỚC 1: Chọn MỘT CẠNH của chi tiết MẪU (Source)");
-
-            if (sourceHatch == null)
+            DrawingViewHatchRegion sourceHatch = null;
+            while (sourceHatch == null)
             {
-                return; // User ESC hoặc không chọn được
+                HatchPickResult sourcePick = PickHatchByCurve(
+                    "BƯỚC 1: Chọn MỘT CẠNH của chi tiết MẪU (Source). Nhấn ESC để thoát");
+
+                if (sourcePick.Status == HatchPickStatus.Cancelled)
+                {
+                    return;
+                }
+
+                if (sourcePick.Status == HatchPickStatus.Found)
+                {
+                    sourceHatch = sourcePick.Hatch;
+                }
             }
 
             // Lấy thông số từ mặt cắt mẫu — dùng late binding giống iLogic
@@ -57,79 +100,81 @@ namespace VinTed.CopyHatch
             bool keepGoing = true;
             while (keepGoing)
             {
-                DrawingViewHatchRegion targetHatch = PickHatchByCurve(
+                HatchPickResult targetPick = PickHatchByCurve(
                     "BƯỚC 2: Chọn MỘT CẠNH của chi tiết ĐÍCH (Nhấn ESC để thoát)");
 
-                if (targetHatch == null)
+                if (targetPick.Status == HatchPickStatus.Cancelled)
                 {
-                    keepGoing = false; // User ESC
+                    keepGoing = false;
+                    continue;
                 }
-                else
+
+                if (targetPick.Status == HatchPickStatus.Retry)
                 {
-                    Transaction txn = null;
-                    try
-                    {
-                        // BẮT BUỘC: Wrap trong Transaction
-                        txn = _invApp.TransactionManager.StartTransaction(
-                            _invApp.ActiveDocument, "VinTed Copy Hatch");
+                    continue;
+                }
 
-                        System.Collections.Generic.List<string> errs = new System.Collections.Generic.List<string>();
+                DrawingViewHatchRegion targetHatch = targetPick.Hatch;
+                Transaction txn = null;
+                try
+                {
+                    // BẮT BUỘC: Wrap trong Transaction
+                    txn = _invApp.TransactionManager.StartTransaction(
+                        _invApp.ActiveDocument, "VinTed Copy Hatch");
 
-                        try 
-                        { 
-                            if (targetHatch.ByMaterial) 
-                                targetHatch.ByMaterial = false; 
-                        }
-                        catch (Exception ex) { errs.Add("ByMaterial: " + ex.Message); }
+                    System.Collections.Generic.List<string> errs = new System.Collections.Generic.List<string>();
 
-                        try { targetHatch.Pattern = sourcePattern as DrawingHatchPattern; }
-                        catch (Exception ex) { errs.Add("Pattern: " + ex.Message); }
-
-                        try { targetHatch.Scale = Convert.ToDouble(sourceScale); }
-                        catch (Exception ex) { errs.Add("Scale: " + ex.Message); }
-
-                        try { targetHatch.Angle = Convert.ToDouble(sourceAngle); }
-                        catch (Exception ex) { errs.Add("Angle: " + ex.Message); }
-
-                        if (sourceColor != null)
-                        {
-                            try { targetHatch.Color = sourceColor as Color; }
-                            catch (Exception ex) { errs.Add("Color: " + ex.Message); }
-                        }
-
-                        if (errs.Count > 0)
-                        {
-                            throw new Exception(string.Join("\n", errs));
-                        }
-
-                        txn.End();
-                        CopiedCount++;
+                    try 
+                    { 
+                        if (targetHatch.ByMaterial) 
+                            targetHatch.ByMaterial = false; 
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) { errs.Add("ByMaterial: " + ex.Message); }
+
+                    try { targetHatch.Pattern = sourcePattern as DrawingHatchPattern; }
+                    catch (Exception ex) { errs.Add("Pattern: " + ex.Message); }
+
+                    try { targetHatch.Scale = Convert.ToDouble(sourceScale); }
+                    catch (Exception ex) { errs.Add("Scale: " + ex.Message); }
+
+                    try { targetHatch.Angle = Convert.ToDouble(sourceAngle); }
+                    catch (Exception ex) { errs.Add("Angle: " + ex.Message); }
+
+                    if (sourceColor != null)
                     {
-                        try { if (txn != null) txn.Abort(); } catch (Exception) { }
-                        System.Windows.MessageBox.Show(
-                            "Lỗi khi áp dụng pattern:\n" + ex.Message,
-                            "VinTed — Debug Info",
-                            System.Windows.MessageBoxButton.OK,
-                            System.Windows.MessageBoxImage.Error);
+                        try { targetHatch.Color = sourceColor as Color; }
+                        catch (Exception ex) { errs.Add("Color: " + ex.Message); }
                     }
+
+                    if (errs.Count > 0)
+                    {
+                        throw new Exception(string.Join("\n", errs));
+                    }
+
+                    txn.End();
+                    CopiedCount++;
+                }
+                catch (Exception ex)
+                {
+                    try { if (txn != null) txn.Abort(); } catch (Exception) { }
+                    System.Windows.MessageBox.Show(
+                        "Lỗi khi áp dụng pattern:\n" + ex.Message,
+                        "VinTed — Debug Info",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Error);
                 }
             }
 
-            // Cập nhật bản vẽ
-            try
-            {
-                _invApp.ActiveDocument.Update();
-            }
-            catch (Exception) { }
+            // Không gọi ActiveDocument.Update() toàn bộ sau khi nhấn ESC.
+            // Inventor đã invalidate drawing view sau mỗi Transaction.End(); ép update ở đây
+            // có thể làm UI đơ vài giây trước khi hiện thông báo hoàn tất trên bản vẽ lớn.
         }
 
         /// <summary>
         /// Chọn Hatch Region thông qua cạnh (DrawingCurveSegment) trong Drawing View.
         /// Port chính xác từ iLogic PickHatchByCurve — dùng late binding cho COM navigation.
         /// </summary>
-        private DrawingViewHatchRegion PickHatchByCurve(string prompt)
+        private HatchPickResult PickHatchByCurve(string prompt)
         {
             try
             {
@@ -141,7 +186,7 @@ namespace VinTed.CopyHatch
 
                 if (pickedObj == null)
                 {
-                    return null;
+                    return HatchPickResult.Cancelled();
                 }
 
                 DrawingCurveSegment segment = (DrawingCurveSegment)pickedObj;
@@ -166,7 +211,9 @@ namespace VinTed.CopyHatch
 
                 if (view == null)
                 {
-                    return null;
+                    ShowRetryWarning(
+                        "Không nhận diện được hình chiếu từ cạnh vừa chọn.\nVui lòng chọn một cạnh thuộc Section View.");
+                    return HatchPickResult.Retry();
                 }
 
                 // Truy xuất SurfaceBody từ ModelGeometry — DÙNG LATE BINDING giống VB
@@ -205,22 +252,16 @@ namespace VinTed.CopyHatch
                 }
                 catch (Exception)
                 {
-                    System.Windows.MessageBox.Show(
-                        "Không thể phân tích khối 3D từ đối tượng này.\nVui lòng chọn một cạnh biên rõ ràng hơn.",
-                        "VinTed — Copy Hatch",
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Warning);
-                    return null;
+                    ShowRetryWarning(
+                        "Không thể phân tích khối 3D từ đối tượng này.\nVui lòng chọn một cạnh biên rõ ràng hơn.");
+                    return HatchPickResult.Retry();
                 }
 
                 if (surfaceBody == null)
                 {
-                    System.Windows.MessageBox.Show(
-                        "Không tìm thấy khối vật thể liên kết với cạnh này.",
-                        "VinTed — Copy Hatch",
-                        System.Windows.MessageBoxButton.OK,
-                        System.Windows.MessageBoxImage.Warning);
-                    return null;
+                    ShowRetryWarning(
+                        "Không tìm thấy khối vật thể liên kết với cạnh này.\nVui lòng chọn cạnh khác hoặc nhấn ESC để kết thúc.");
+                    return HatchPickResult.Retry();
                 }
 
                 // Lấy HatchRegions từ DrawingView (chỉ khả dụng từ Inventor 2022+)
@@ -238,18 +279,17 @@ namespace VinTed.CopyHatch
                     }
                     catch (Exception)
                     {
-                        System.Windows.MessageBox.Show(
-                            "Phiên bản Inventor của bạn có thể cũ hơn 2022.\nAPI chưa hỗ trợ tính năng HatchRegions.",
-                            "VinTed — Copy Hatch",
-                            System.Windows.MessageBoxButton.OK,
-                            System.Windows.MessageBoxImage.Error);
-                        return null;
+                        ShowRetryWarning(
+                            "Phiên bản Inventor của bạn có thể cũ hơn 2022.\nAPI chưa hỗ trợ tính năng HatchRegions.");
+                        return HatchPickResult.Cancelled();
                     }
                 }
 
                 if (hatchRegionsObj == null)
                 {
-                    return null;
+                    ShowRetryWarning(
+                        "Hình chiếu này không có dữ liệu HatchRegions.\nVui lòng chọn cạnh khác hoặc nhấn ESC để kết thúc.");
+                    return HatchPickResult.Retry();
                 }
 
                 // Duyệt tìm hatch region khớp với SurfaceBody
@@ -277,7 +317,7 @@ namespace VinTed.CopyHatch
                                 pHatchBodyUnk = Marshal.GetIUnknownForObject(hatchBody);
                                 if (pHatchBodyUnk == pTargetUnk)
                                 {
-                                    return hatch; // Tìm thấy!
+                                    return HatchPickResult.Found(hatch); // Tìm thấy!
                                 }
                             }
                         }
@@ -302,19 +342,26 @@ namespace VinTed.CopyHatch
                     }
                 }
 
-                System.Windows.MessageBox.Show(
+                ShowRetryWarning(
                     "Không tìm thấy mặt cắt (Hatch) nào khớp với chi tiết bạn vừa click.\n" +
-                    "Đảm bảo bạn đang chọn cạnh thuộc hình cắt (Section View).",
-                    "VinTed — Copy Hatch",
-                    System.Windows.MessageBoxButton.OK,
-                    System.Windows.MessageBoxImage.Warning);
-                return null;
+                    "Đảm bảo bạn đang chọn cạnh thuộc hình cắt (Section View).\n" +
+                    "Vui lòng chọn lại hoặc nhấn ESC để kết thúc.");
+                return HatchPickResult.Retry();
             }
             catch (Exception)
             {
-                // User nhấn ESC hoặc lỗi pick → trả null để kết thúc
-                return null;
+                // User nhấn ESC hoặc hủy Pick → kết thúc workflow.
+                return HatchPickResult.Cancelled();
             }
+        }
+
+        private static void ShowRetryWarning(string message)
+        {
+            System.Windows.MessageBox.Show(
+                message,
+                "VinTed — Copy Hatch",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
         }
 
         /// <summary>

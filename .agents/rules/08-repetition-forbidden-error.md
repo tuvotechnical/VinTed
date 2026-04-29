@@ -149,7 +149,10 @@ trigger: always_on
 - **Nguyên nhân:** Máy build không có `git.exe` trong `PATH`, không có `gh` CLI hoặc `GITHUB_TOKEN`; `commit.ps1` chưa dừng pipeline khi lệnh `git` không tồn tại hoặc release auth thiếu. Repo-local Git identity cũng chưa được set.
 - **Fix:** Trước khi chạy commit/release phải kiểm tra sẵn `git`, `gh` hoặc `GITHUB_TOKEN`. Nếu thiếu, dừng script với exit code khác 0 hoặc dùng MCP GitHub/API đã xác thực để tạo commit/release. Nếu chỉ thiếu identity, set repo-local `git config user.name` và `git config user.email`. Không tin vào dòng `HOAN TAT PIPELINE` nếu log có `CommandNotFoundException`.
 
----
+## ERR-15: Manual Check for Update làm văng Inventor khi mở WPF Window
+- **Lỗi:** Nhấn Ribbon `Check for Updates` có thể làm Inventor crash/văng khi tạo `UpdateNotificationWindow` hoặc hiển thị MessageBox từ callback Dispatcher.
+- **Nguyên nhân:** `UpdateNotificationWindow.xaml` dùng ModernWpf (`WindowHelper.UseModernWindowStyle`, `ThemeManager.RequestedTheme`) nhưng thiếu `ui:ThemeResources` và `ui:XamlControlsResources` trong `MergedDictionaries` giống ERR-12. Ngoài ra delegate `_uiDispatcher.BeginInvoke(...)` của luồng check thủ công chưa có `try-catch` bên trong; exception phát sinh trên UI thread có thể thoát ra khỏi callback COM/WPF và làm host Inventor không ổn định.
+- **Fix:** Mọi WPF Window dùng ModernWpf phải merge `ui:ThemeResources` + `ui:XamlControlsResources` đầu tiên. Mọi logic UI được dispatch bằng `_uiDispatcher.BeginInvoke` phải gọi helper có `try-catch` nội bộ, không để exception thoát khỏi delegate UI thread.
 
 ## QUY TẮC CHUNG RÚT RA
 

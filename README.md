@@ -65,6 +65,7 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
   * Truy xuất `SurfaceBody` từ `DrawingCurve.ModelGeometry` (Edge → Face → SurfaceBody).
   * Duyệt `DrawingView.HatchRegions` để tìm hatch region khớp với SurfaceBody.
   * Nếu chọn cạnh không có hatch, hiển thị cảnh báo và tiếp tục cho chọn lại; chỉ nhấn **ESC** mới kết thúc quy trình.
+  * Khi nhấn **ESC** để kết thúc, workflow thoát ngay và không ép `Document.Update()` toàn bộ bản vẽ, tránh Inventor bị đơ vài giây trước khi hiện thông báo hoàn tất.
   * Tự động tắt `ByMaterial` trước khi áp dụng pattern mới.
 * **Giao diện:** WPF ModernWpf **Light Theme** — header gradient xanh, hướng dẫn 3 bước trực quan, bộ đếm hatch đã copy, status bar realtime.
 * **Yêu cầu:** Inventor 2022+ (API `HatchRegions` khả dụng từ 2022).
@@ -88,6 +89,7 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
   * Background thread tự động check version mới nhất trên GitHub Releases thông qua REST API (`/repos/tuvotechnical/VinTed/releases/latest`).
   * Nút "Check for Updates" được gắn vào Ribbon Tab "VinTed" (Panel "About") trong tất cả các môi trường (Drawing, Assembly, Part, Presentation, ZeroDoc) để người dùng có thể chủ động kiểm tra bất cứ lúc nào.
   * Chuẩn hóa tag GitHub và version trong assembly theo SemVer (`x.y.z`) trước khi so sánh/hiển thị, tránh lỗi nhận nhầm `1.1.5` thành `1.1.15` hoặc các tag có tiền tố/ký tự phụ.
+  * Luồng kiểm tra thủ công luôn dispatch về UI thread với `try-catch` nội bộ và dùng ModernWpf resource dictionaries chuẩn để không làm crash Inventor khi mở cửa sổ thông báo.
   * Khi có version mới, sẽ hiển thị một cửa sổ thông báo (UpdateNotificationWindow) với các thông tin về Release Notes.
   * Nếu nhấn **"Tải về ngay"**, hệ thống sẽ tự động gọi PowerShell chạy lệnh tải script `install.ps1` trực tiếp từ GitHub để tự động đóng Inventor, download bộ cài đặt mới nhất, giải nén và tự động update VinTed hoàn toàn trong suốt.
 * **Giao diện:** WPF ModernWpf **Light Theme** — header gradient xanh (#005DA6), so sánh version trực quan, bo góc hiện đại.

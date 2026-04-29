@@ -214,13 +214,7 @@ namespace VinTed
                         _uiDispatcher.BeginInvoke(
                             new Action(delegate()
                             {
-                                try
-                                {
-                                    Updater.UpdateNotificationWindow win =
-                                        new Updater.UpdateNotificationWindow(result);
-                                    win.Show();
-                                }
-                                catch (Exception) { }
+                                ShowUpdateResultOnUi(result, false);
                             }));
                     }
                 }
@@ -427,19 +421,7 @@ namespace VinTed
                         Updater.UpdateCheckResult result = Updater.UpdateChecker.CheckForUpdate();
                         _uiDispatcher.BeginInvoke(new Action(delegate()
                         {
-                            if (result.HasUpdate)
-                            {
-                                Updater.UpdateNotificationWindow win = new Updater.UpdateNotificationWindow(result);
-                                win.Show();
-                            }
-                            else
-                            {
-                                System.Windows.MessageBox.Show(
-                                    "Bạn đang sử dụng phiên bản VinTed mới nhất (" + result.CurrentVersion + ").",
-                                    "VinTed Update",
-                                    System.Windows.MessageBoxButton.OK,
-                                    System.Windows.MessageBoxImage.Information);
-                            }
+                            ShowUpdateResultOnUi(result, true);
                         }));
                     }
                     catch (Exception ex)
@@ -455,6 +437,51 @@ namespace VinTed
             catch (Exception ex)
             {
                 System.Windows.MessageBox.Show("Lỗi: " + ex.Message, "VinTed Error");
+            }
+        }
+
+        private void ShowUpdateResultOnUi(Updater.UpdateCheckResult result, bool showNoUpdateMessage)
+        {
+            try
+            {
+                if (result == null)
+                {
+                    if (showNoUpdateMessage)
+                    {
+                        System.Windows.MessageBox.Show(
+                            "Không thể đọc thông tin cập nhật. Vui lòng kiểm tra kết nối Internet và thử lại.",
+                            "VinTed Update",
+                            System.Windows.MessageBoxButton.OK,
+                            System.Windows.MessageBoxImage.Warning);
+                    }
+                    return;
+                }
+
+                if (result.HasUpdate)
+                {
+                    Updater.UpdateNotificationWindow win = new Updater.UpdateNotificationWindow(result);
+                    win.Show();
+                }
+                else if (showNoUpdateMessage)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Bạn đang sử dụng phiên bản VinTed mới nhất (" + result.CurrentVersion + ").",
+                        "VinTed Update",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Information);
+                }
+            }
+            catch (Exception ex)
+            {
+                try
+                {
+                    System.Windows.MessageBox.Show(
+                        "Lỗi khi hiển thị thông tin cập nhật: " + ex.Message,
+                        "VinTed Error",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Error);
+                }
+                catch (Exception) { }
             }
         }
 

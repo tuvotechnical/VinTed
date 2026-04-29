@@ -15,6 +15,8 @@
     <Window.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
+                <ui:ThemeResources RequestedTheme="Light"/>
+                <ui:XamlControlsResources/>
                 <ResourceDictionary Source="/VinTed;component/Themes/ThemeColors.xaml"/>
                 <ResourceDictionary Source="/VinTed;component/Themes/ControlStyles.xaml"/>
             </ResourceDictionary.MergedDictionaries>

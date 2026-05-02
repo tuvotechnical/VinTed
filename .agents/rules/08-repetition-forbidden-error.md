@@ -154,6 +154,30 @@ trigger: always_on
 - **Nguyên nhân:** `UpdateNotificationWindow.xaml` dùng ModernWpf (`WindowHelper.UseModernWindowStyle`, `ThemeManager.RequestedTheme`) nhưng thiếu `ui:ThemeResources` và `ui:XamlControlsResources` trong `MergedDictionaries` giống ERR-12. Ngoài ra delegate `_uiDispatcher.BeginInvoke(...)` của luồng check thủ công chưa có `try-catch` bên trong; exception phát sinh trên UI thread có thể thoát ra khỏi callback COM/WPF và làm host Inventor không ổn định.
 - **Fix:** Mọi WPF Window dùng ModernWpf phải merge `ui:ThemeResources` + `ui:XamlControlsResources` đầu tiên. Mọi logic UI được dispatch bằng `_uiDispatcher.BeginInvoke` phải gọi helper có `try-catch` nội bộ, không để exception thoát khỏi delegate UI thread.
 
+## ERR-16: `NameValueMap.get_NameIsUsed()` không tồn tại — CS1061
+- **Lỗi:** `error CS1061: 'Inventor.NameValueMap' does not contain a definition for 'get_NameIsUsed'`
+- **Nguyên nhân:** Inventor COM interop 2023 không expose helper `get_NameIsUsed` trên `NameValueMap` như một số sample/API wrapper khác. Gọi trực tiếp sẽ fail build.
+- **Fix:** Khi set option cho Translator `NameValueMap`, dùng pattern an toàn: thử `map.set_Value(name, value)` trước; nếu option chưa tồn tại thì catch và fallback `map.Add(name, value)`. Không gọi `get_NameIsUsed`.
+
+## ERR-17: Gọi Inventor COM/DWG Translator từ `BackgroundWorker` làm UI đơ/chậm
+- **Lỗi:** Export AutoCAD/DWG trong add-in bị đơ UI/UX, STOP không phản hồi tốt và xuất chậm hơn iLogic khi gọi `TranslatorAddIn.SaveCopyAs` từ `BackgroundWorker.DoWork`.
+- **Nguyên nhân:** Inventor COM API/DWG Translator nên chạy trên main STA/UI thread của Inventor. Gọi từ worker thread gây COM marshaling/blocking, message pump kém ổn định và có thể làm workflow chậm hơn. Ngoài ra xuất từng sheet nghĩa là gọi `SaveCopyAs` nhiều lần, chậm hơn iLogic all-sheets một lần.
+- **Fix:** Không gọi Inventor COM/Translator từ `BackgroundWorker`. Chạy export trên STA/UI thread, pump UI tại checkpoint bằng `System.Windows.Forms.Application.DoEvents()`, mặc định Fast Mode gọi `SaveCopyAs` một lần cho phạm vi sheet, chỉ dùng per-sheet khi cần STOP/progress từng sheet.
+
+## ERR-18: `SaveCopyAs` DWG Translator ném `E_UNEXPECTED (0x8000FFFF)` — Catastrophic failure
+- **Lỗi:** `Catastrophic failure (Exception from HRESULT: 0x8000FFFF (E_UNEXPECTED))` khi gọi `TranslatorAddIn.SaveCopyAs` cho DWG export.
+- **Nguyên nhân:**
+  1. **Transaction bên ngoài xung đột:** `SaveCopyAs` của DWG Translator tự quản lý transaction nội bộ. Wrap thêm `TransactionManager.StartTransaction` bên ngoài gây xung đột COM → crash.
+  2. **`IOMechanismEnum` sai:** `TranslationContext.Type` phải là `kFileBrowseIOMechanism`, không phải `kUnspecifiedIOMechanism`.
+  3. **NameValueMap key không hợp lệ:** Các key như `OutputFileName`, `Output_File`, `SaveCopyAsFileName`, `Launch Viewer`, `Open_Viewer`, `Show_Save_Copy_As_Options`, `ShowSaveCopyAsOptions`, `Export_All_Sheets` không phải option chuẩn của DWG Translator, gây lỗi hoặc hành vi không xác định.
+  4. **File output bị lock:** File `.dwg` cũ đang bị lock bởi process khác khiến Translator không ghi được.
+- **Fix:**
+  - KHÔNG wrap `SaveCopyAs` trong Transaction — khác với ERR-10 (modify document properties cần Transaction), export DWG tự quản lý.
+  - Dùng `context.Type = IOMechanismEnum.kFileBrowseIOMechanism`.
+  - Chỉ set key hợp lệ: `Export_Acad_IniFile`, `Launch_Viewer`, `Sheet_Range`, `Custom_Begin_Sheet`, `Custom_End_Sheet`.
+  - Xóa file output cũ trước khi gọi `SaveCopyAs`.
+- **Quy tắc:** `TranslatorAddIn.SaveCopyAs` là operation read-only (export/copy), KHÔNG cần Transaction bên ngoài. Chỉ dùng Transaction cho các thao tác **modify** document (set property, add/delete object).
+
 ## QUY TẮC CHUNG RÚT RA
 
 ### Namespace Inventor — Luôn cảnh giác xung đột

@@ -71,7 +71,26 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
 * **Yêu cầu:** Inventor 2022+ (API `HatchRegions` khả dụng từ 2022).
 * **Ribbon:** Tab **VinTed** → Panel **Drawing Tools**.
 
-### C. Insert Plus+ (Copy và Lắp ráp tự động)
+### C. Export AutoCAD/DWG (Xuất DWG — Port 100% từ HNB iLogic)
+* **Chức năng:** Xuất bản vẽ Inventor sang AutoCAD DWG. Logic port 100% từ `ilogic/frmDWGExport.cs` + `ilogic/ExportToDWG.cs`.
+* **Hỗ trợ loại document:** Drawing (.idw/.dwg), Part (.ipt), Assembly (.iam).
+* **4 chế độ chọn Sheet (Drawing):**
+  * **Tất cả Sheet:** Tự động đổi tên sheet thành 1, 2, 3... → gọi `SaveCopyAs` một lần (giống iLogic All Sheets). INI: `ALL SHEETS=Yes`.
+  * **Sheet hiện tại:** Chỉ xuất sheet đang active. INI: `ALL SHEETS=No`.
+  * **Tùy chọn (Custom):** Nhập danh sách sheet cách bằng dấu phẩy (VD: 1,3,5). Xuất từng sheet một.
+  * **Từ — Đến (From-To):** Nhập phạm vi sheet (VD: 2 đến 6). Xuất từng sheet trong phạm vi.
+* **Export Style:** Model (SCALING=Geometry) / Layout (SCALING=Text) — giống ComboBox trong frmDWGExport.
+* **INI File tự động:** Tạo file `ExportToDWG.ini` đầy đủ (AutoCAD 2007, Line Type mapping, SPACE, SCALING...) — 100% nội dung giống iLogic.
+* **Part/Assembly:** Set `Solid=true`, `Surface=true`, `Sketch=true`, `DwgVersion=27` → SaveCopyAs → mở Explorer tới file.
+* **Kiểm tra Raster View:** Quét toàn bộ DrawingView, cảnh báo nếu có view Raster trước khi export.
+* **DWG Translator Options:** Nút Options mở dialog cấu hình gốc của Inventor DWG Translator.
+* **Validation đầy đủ:** Kiểm tra ký tự đặc biệt tên file/đường dẫn, hỏi xóa file DWG cũ, hỏi ghi đè file đã tồn tại — 100% logic từ frmDWGExport.
+* **STOP an toàn:** Hỗ trợ dừng giữa các sheet trong chế độ Custom/FromTo.
+* **An toàn:** Transaction wrap cho RenameSheet + SaveCopyAs (giống iLogic). Try-catch toàn bộ.
+* **Giao diện:** WPF ModernWpf **Light Theme** — header gradient, 2-column layout (Sheet Options + Export Style), progress bar, nút STOP.
+* **Ribbon:** Tab **VinTed** → Panel **Drawing Tools**.
+
+### D. Insert Plus+ (Copy và Lắp ráp tự động)
 * **Chức năng:** Tự động copy cụm chi tiết phần cứng (bu-lông, vòng đệm, đai ốc...) và lắp ráp (Insert Constraint) hàng loạt vào các lỗ trên cụm lắp ráp (Assembly).
 * **Workflow 2 bước siêu tốc:**
   1. **Bước 1 (Chọn Nguồn):** Chọn 1 cạnh tròn (Circular Edge) trên chi tiết bu-lông mẫu đã có sẵn. Add-in tự động nhận diện `ComponentOccurrence` chứa cạnh đó. Tùy chọn tự động quét và copy kèm các chi tiết đang được liên kết cứng với bu-lông này (vòng đệm, đai ốc).

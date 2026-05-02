@@ -200,13 +200,18 @@ Write-Host "[8/8] Tao GitHub Release..." -ForegroundColor Yellow
 
 # Kiem tra gh CLI
 $ghPath = Get-Command "gh" -ErrorAction SilentlyContinue
+$localGh = ".\.tools\gh\bin\gh.exe"
+if (Test-Path $localGh) {
+    $ghPath = $localGh
+}
+
 if ($ghPath) {
     # Dung gh CLI (cach tot nhat)
     $tagName = "v$newVersion"
     $releaseTitle = "VinTed v$newVersion"
     $releaseNotes = "## VinTed v$newVersion`n`n$Message`n`n### Huong dan cap nhat:`n1. Tai file VinTed-v$newVersion.zip ben duoi.`n2. Giai nen vao %AppData%\Autodesk\ApplicationPlugins\VinTed\`n3. Khoi dong lai Inventor."
 
-    gh release create $tagName $zipPath --title $releaseTitle --notes $releaseNotes
+    & $ghPath release create $tagName $zipPath --title $releaseTitle --notes $releaseNotes
     if ($LASTEXITCODE -eq 0) {
         Write-Host "  Da tao Release: $tagName" -ForegroundColor Green
     } else {

@@ -20,6 +20,7 @@ namespace VinTed
         private Application _invApp;
         private ButtonDefinition _btnFindReplace;
         private ButtonDefinition _btnCopyHatch;
+        private ButtonDefinition _btnExportCad;
         private ButtonDefinition _btnInsertPlus;
         private ButtonDefinition _btnUpdate;
         private ButtonDefinition _btnAccount;
@@ -90,6 +91,31 @@ namespace VinTed
                     iconCopyHatchLarge);
 
                 _btnCopyHatch.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(OnCopyHatch_Execute);
+
+                // Tạo ButtonDefinition cho Export CAD
+                stdole.IPictureDisp iconExportCadSmall = null;
+                stdole.IPictureDisp iconExportCadLarge = null;
+                try
+                {
+                    string iconPath = System.IO.Path.Combine(_addinFolder, "Assets", "export-cad.svg");
+                    iconExportCadSmall = IconHelper.CreateIconFromSvgFile(iconPath, 16,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                    iconExportCadLarge = IconHelper.CreateIconFromSvgFile(iconPath, 32,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                }
+                catch (Exception) { }
+
+                _btnExportCad = ctrlDefs.AddButtonDefinition(
+                    "Export CAD",
+                    "VinTed_ExportCAD",
+                    CommandTypesEnum.kFileOperationsCmdType,
+                    "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}",
+                    "Xuất Drawing sang AutoCAD DWG có tiến trình và STOP",
+                    "VinTed Export CAD\nXuất từng sheet sang DWG, theo dõi tiến trình và dừng an toàn.",
+                    iconExportCadSmall,
+                    iconExportCadLarge);
+
+                _btnExportCad.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(OnExportCad_Execute);
 
                 // Tạo ButtonDefinition cho Insert Plus
                 stdole.IPictureDisp iconInsertSmall = null;
@@ -264,6 +290,7 @@ namespace VinTed
                             try { panelDrawing = vinTedTab.RibbonPanels["Drawing Tools"]; }
                             catch { panelDrawing = vinTedTab.RibbonPanels.Add("Drawing Tools", "VinTed_DrawingTools", "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}"); }
                             try { panelDrawing.CommandControls.AddButton(_btnCopyHatch); } catch { }
+                            try { panelDrawing.CommandControls.AddButton(_btnExportCad); } catch { }
                         }
                         else if (envName == "Assembly")
                         {
@@ -350,6 +377,47 @@ namespace VinTed
 
                 DrawingDocument drawDoc = (DrawingDocument)activeDoc;
                 CopyHatch.CopyHatchWindow window = new CopyHatch.CopyHatchWindow(_invApp, drawDoc);
+                window.Show();
+            }
+            catch (Exception ex)
+            {
+                string msg = "Lỗi: " + ex.Message;
+                if (ex.InnerException != null)
+                {
+                    msg = msg + "\n\nInner: " + ex.InnerException.Message;
+                }
+                msg = msg + "\n\nStack: " + ex.StackTrace;
+                System.Windows.MessageBox.Show(
+                    msg,
+                    "VinTed Error",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        private void OnExportCad_Execute(NameValueMap context)
+        {
+            try
+            {
+                Document activeDoc = _invApp.ActiveDocument;
+                if (activeDoc == null || activeDoc.DocumentType != DocumentTypeEnum.kDrawingDocumentObject)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Tính năng Export CAD chỉ hoạt động trong môi trường Drawing (.idw / .dwg).",
+                        "VinTed",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!Licensing.LicenseManager.RequireActive())
+                {
+                    ShowLicenseRequired();
+                    return;
+                }
+
+                DrawingDocument drawDoc = (DrawingDocument)activeDoc;
+                ExportAutoCAD.ExportAutoCadWindow window = new ExportAutoCAD.ExportAutoCadWindow(_invApp, drawDoc);
                 window.Show();
             }
             catch (Exception ex)
@@ -592,6 +660,7 @@ namespace VinTed
             AppDomain.CurrentDomain.AssemblyResolve -= OnAssemblyResolve;
             _btnFindReplace = null;
             _btnCopyHatch = null;
+            _btnExportCad = null;
             _btnInsertPlus = null;
             _btnUpdate = null;
             _btnAccount = null;

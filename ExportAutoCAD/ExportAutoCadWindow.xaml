@@ -1,0 +1,214 @@
+<Window x:Class="VinTed.ExportAutoCAD.ExportAutoCadWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        ui:ThemeManager.RequestedTheme="Light"
+        Title="VinTed — Export AutoCAD/DWG"
+        Width="620" SizeToContent="Height"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        ResizeMode="NoResize"
+        FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ui:ThemeResources RequestedTheme="Light"/>
+                <ui:XamlControlsResources/>
+                <ResourceDictionary Source="/VinTed;component/Themes/ThemeColors.xaml"/>
+                <ResourceDictionary Source="/VinTed;component/Themes/ControlStyles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- Local Brushes -->
+            <SolidColorBrush x:Key="ExportAccentBrush" Color="#005DA6"/>
+            <SolidColorBrush x:Key="ExportSoftBg" Color="#EAF4FF"/>
+            <SolidColorBrush x:Key="StopBrush" Color="#C2410C"/>
+            <SolidColorBrush x:Key="DisabledFg" Color="#9CA3AF"/>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid Background="#F5F6F7">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ====== HEADER BANNER ====== -->
+        <Border Grid.Row="0" Padding="24" Background="#005DA6">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Border Width="52" Height="52" CornerRadius="14" Background="#25FFFFFF" Margin="0,0,16,0">
+                    <Path Width="30" Height="30" Stretch="Uniform" Fill="#FFE082"
+                          Data="M5 3h10l4 4v14H5z M14 3v5h5 M7 13h10v2H7z M7 17h7v2H7z M8 7h4v4H8z"/>
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <TextBlock Text="Export AutoCAD / DWG" FontSize="24" FontWeight="SemiBold" Foreground="White"/>
+                    <TextBlock Text="Xuất bản vẽ sang định dạng DWG với nhiều chế độ linh hoạt."
+                               FontSize="12.5" Foreground="#D9ECFF" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ====== MAIN CONTENT ====== -->
+        <StackPanel Grid.Row="1" Margin="24,20,24,18">
+
+            <!-- FILE OUTPUT SECTION -->
+            <TextBlock Text="TÊN FILE VÀ THƯ MỤC" Style="{StaticResource VtSectionLabel}"/>
+            <Border Background="White" BorderBrush="#DDE4EC" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,6,0,16">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="12"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="120"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Tên file (Item Code)" VerticalAlignment="Center" Foreground="#44546A" FontSize="12.5"/>
+                    <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="3" x:Name="txtBaseFileName" Height="34" FontSize="13"
+                             ToolTip="Tên file sau khi xuất (không cần phần mở rộng .dwg)"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Thư mục lưu" VerticalAlignment="Center" Foreground="#44546A" FontSize="12.5"/>
+                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="txtOutputFolder" Height="34" FontSize="13" IsReadOnly="True"
+                             ToolTip="Đường dẫn thư mục để lưu file DWG"/>
+                    <Button Grid.Row="2" Grid.Column="3" x:Name="btnBrowse" Content="Browse" Width="86" Height="34" Click="BtnBrowse_Click"
+                            ToolTip="Chọn đường dẫn để lưu tệp"/>
+                </Grid>
+            </Border>
+
+            <!-- SHEET OPTIONS + EXPORT STYLE — 2 columns like frmDWGExport -->
+            <TextBlock Text="TÙY CHỌN XUẤT" Style="{StaticResource VtSectionLabel}"/>
+            <Border Background="White" BorderBrush="#DDE4EC" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,6,0,16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="200"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- LEFT: Sheet Mode (RadioButtons) — từ gbOptions -->
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="Phạm vi Sheet" Foreground="#44546A" FontWeight="SemiBold" FontSize="12.5" Margin="0,0,0,10"/>
+
+                        <RadioButton x:Name="rbAllSheets" Content="Tất cả Sheet" IsChecked="True" Margin="0,0,0,6"
+                                     ToolTip="Xuất tất cả các trang bản vẽ" Checked="SheetMode_Changed"/>
+
+                        <RadioButton x:Name="rbCurrentSheet" Content="Sheet hiện tại" Margin="0,0,0,6"
+                                     ToolTip="Xuất trang bản vẽ đang được kích hoạt" Checked="SheetMode_Changed"/>
+
+                        <RadioButton x:Name="rbCustom" Content="Tùy chọn" Margin="0,0,0,4"
+                                     ToolTip="Chọn sheet cụ thể (VD: 1,3,5)" Checked="SheetMode_Changed"/>
+                        <TextBox x:Name="txtCustomSheets" Height="30" Text="1,3,5" Margin="20,0,0,8" IsEnabled="False"
+                                 ToolTip="Nhập số sheet cách nhau bằng dấu phẩy"/>
+
+                        <RadioButton x:Name="rbFromTo" Content="Từ — Đến" Margin="0,0,0,4"
+                                     ToolTip="Xuất bản vẽ từ sheet ... đến sheet ..." Checked="SheetMode_Changed"/>
+                        <StackPanel Orientation="Horizontal" Margin="20,0,0,0">
+                            <TextBox x:Name="txtFrom" Width="50" Height="30" Text="1" TextAlignment="Center" IsEnabled="False"/>
+                            <TextBlock Text="đến" VerticalAlignment="Center" Margin="8,0,8,0" Foreground="#6B778C"/>
+                            <TextBox x:Name="txtTo" Width="50" Height="30" Text="1" TextAlignment="Center" IsEnabled="False"/>
+                            <TextBlock x:Name="lblSheetCount" Text="/ 1" VerticalAlignment="Center" Margin="8,0,0,0" Foreground="#9CA3AF" FontSize="11.5"/>
+                        </StackPanel>
+                    </StackPanel>
+
+                    <!-- Vertical separator -->
+                    <Border Grid.Column="1" Width="1" Background="#E5E7EB" Margin="0,0,0,0"/>
+
+                    <!-- RIGHT: Export Style + Options — từ gbOutput -->
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="Export Style" Foreground="#44546A" FontWeight="SemiBold" FontSize="12.5" Margin="0,0,0,8"/>
+                        <ComboBox x:Name="cmbExportSpace" Height="34" SelectedIndex="0" Margin="0,0,0,14"
+                                  ToolTip="Model: xuất sang Model Space. Layout: xuất sang Layout Space.">
+                            <ComboBoxItem Content="Model"/>
+                            <ComboBoxItem Content="Layout"/>
+                        </ComboBox>
+
+                        <CheckBox x:Name="chkOptimizedIni" Content="Dùng cấu hình DWG tối ưu (nhẹ file)" IsChecked="True" Margin="0,0,0,8"/>
+
+                        <CheckBox x:Name="chkMergeFiles" Content="Gộp tất cả file DWG thành 1 bản vẽ" Margin="0,0,0,4" Checked="MergeFiles_Changed" Unchecked="MergeFiles_Changed"/>
+                        <StackPanel Orientation="Horizontal" Margin="24,0,0,12">
+                            <TextBlock Text="Khoảng cách (Gap):" VerticalAlignment="Center" Foreground="#44546A" Margin="0,0,8,0"/>
+                            <TextBox x:Name="txtGap" Width="60" Height="28" Text="100" IsEnabled="False"/>
+                            <CheckBox x:Name="chkDeleteAfterMerge" Content="Xóa file lẻ" Margin="12,0,0,0" IsEnabled="False" VerticalAlignment="Center"/>
+                        </StackPanel>
+
+                        <CheckBox x:Name="chkDisableScreenUpdating" Content="Tắt cập nhật màn hình (Tăng tốc độ xuất)" IsChecked="True" Margin="0,0,0,8" ToolTip="Tắt làm mới giao diện Inventor khi chuyển sheet, giúp xuất siêu tốc."/>
+                        <CheckBox x:Name="chkEnableSilentOperation" Content="Chạy ngầm (Chặn các hộp thoại cảnh báo)" IsChecked="True" Margin="0,0,0,12" ToolTip="Ngăn Inventor hiện các bảng thông báo làm gián đoạn quá trình xuất."/>
+
+                        <!-- Thông tin Export Style -->
+                        <Border Background="#EAF4FF" BorderBrush="#B9D9F4" BorderThickness="1" CornerRadius="8" Padding="10" Margin="0,4,0,0">
+                            <TextBlock x:Name="lblStyleHint"
+                                       Text="Model: Các sheet được đặt liền nhau trong Model Space.&#x0a;Layout: Mỗi sheet nằm trong một Layout Tab riêng."
+                                       Foreground="#315B7D" TextWrapping="Wrap" FontSize="11.5"/>
+                        </Border>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- PROGRESS SECTION -->
+            <TextBlock Text="TIẾN TRÌNH" Style="{StaticResource VtSectionLabel}"/>
+            <Border Background="White" BorderBrush="#DDE4EC" BorderThickness="1" CornerRadius="10" Padding="16" Margin="0,6,0,0">
+                <StackPanel>
+                    <Grid Margin="0,0,0,10">
+                        <TextBlock x:Name="lblProgress" Text="Sẵn sàng xuất DWG" FontSize="14" FontWeight="SemiBold" Foreground="#172B4D"/>
+                        <TextBlock x:Name="lblPercent" Text="0%" HorizontalAlignment="Right" Foreground="#005DA6" FontWeight="SemiBold"/>
+                    </Grid>
+                    <ProgressBar x:Name="progressBar" Height="12" Minimum="0" Maximum="100" Value="0"/>
+                    <TextBlock x:Name="lblOutput" Text="Chọn chế độ xuất và nhấn Bắt đầu." Margin="0,10,0,0" Foreground="#6B778C" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ACTION BUTTONS -->
+            <Grid Margin="0,18,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="12"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- DWG Translator Options (giống btnOptions trong iLogic) -->
+                <Button Grid.Column="0" x:Name="btnOptions" Width="100" Height="42" Click="BtnOptions_Click"
+                        ToolTip="Mở hộp thoại DWG Translator Options của Inventor">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="⚙" Margin="0,0,6,0"/>
+                        <TextBlock Text="Options"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Export button -->
+                <Button Grid.Column="2" x:Name="btnStart" Height="42" Click="BtnStart_Click" Style="{StaticResource VtBtnPrimary}">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="▶" Margin="0,0,8,0"/>
+                        <TextBlock Text="Bắt đầu xuất"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- Stop button -->
+                <Button Grid.Column="4" x:Name="btnStop" Width="100" Height="42" Click="BtnStop_Click" IsEnabled="False"
+                        Background="#C2410C" Foreground="White" BorderBrush="#C2410C">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <TextBlock Text="■" Margin="0,0,6,0"/>
+                        <TextBlock Text="STOP" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Button>
+            </Grid>
+        </StackPanel>
+
+        <!-- ====== FOOTER ====== -->
+        <Border Grid.Row="2" Background="#EEF2F6" BorderBrush="#DDE4EC" BorderThickness="0,1,0,0" Padding="16,10">
+            <TextBlock Text="VinTed Export DWG"
+                       Foreground="#6B778C" FontSize="11.5" HorizontalAlignment="Center"/>
+        </Border>
+    </Grid>
+</Window>

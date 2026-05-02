@@ -62,6 +62,12 @@
     <Compile Include="CopyHatch\CopyHatchWindow.xaml.cs">
       <DependentUpon>CopyHatchWindow.xaml</DependentUpon>
     </Compile>
+    <Compile Include="ExportAutoCAD\ExportAutoCadOptions.cs" />
+    <Compile Include="ExportAutoCAD\ExportAutoCadProgressEventArgs.cs" />
+    <Compile Include="ExportAutoCAD\ExportAutoCadEngine.cs" />
+    <Compile Include="ExportAutoCAD\ExportAutoCadWindow.xaml.cs">
+      <DependentUpon>ExportAutoCadWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="InsertPlus\InsertPlusEngine.cs" />
     <Compile Include="InsertPlus\InsertPlusWindow.xaml.cs">
       <DependentUpon>InsertPlusWindow.xaml</DependentUpon>
@@ -102,6 +108,10 @@
       <Generator>MSBuild:Compile</Generator>
     </Page>
     <Page Include="CopyHatch\CopyHatchWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ExportAutoCAD\ExportAutoCadWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

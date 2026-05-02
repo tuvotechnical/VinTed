@@ -33,6 +33,32 @@ if (Test-Path $versionFile) {
     Write-Host "  -> Khong tim thay version.json, dung version mac dinh." -ForegroundColor Gray
 }
 
+# --- STEP 0B: Ensure ModernWpf dependencies ---
+Write-Host "[0B/7] Kiem tra ModernWpf dependencies..." -ForegroundColor Yellow
+$modernWpfDir = ".\packages\ModernWpfUI\lib\net45"
+$modernWpfDll = [System.IO.Path]::Combine($modernWpfDir, "ModernWpf.dll")
+$modernWpfControlsDll = [System.IO.Path]::Combine($modernWpfDir, "ModernWpf.Controls.dll")
+if (!(Test-Path $modernWpfDll) -or !(Test-Path $modernWpfControlsDll)) {
+    Write-Host "  -> Thieu ModernWpf, dang tai bang NuGet CLI..." -ForegroundColor Yellow
+    $nugetExe = ".\nuget.exe"
+    if (!(Test-Path $nugetExe)) {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        (New-Object System.Net.WebClient).DownloadFile("https://dist.nuget.org/win-x86-commandline/latest/nuget.exe", $nugetExe)
+    }
+    & $nugetExe install ModernWpfUI -Version 0.9.6 -OutputDirectory ".\packages" -ExcludeVersion -NonInteractive
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ""
+        Write-Host "*** RESTORE MODERNWPF THAT BAI! ***" -ForegroundColor Red
+        exit 1
+    }
+}
+if (!(Test-Path $modernWpfDll) -or !(Test-Path $modernWpfControlsDll)) {
+    Write-Host ""
+    Write-Host "*** KHONG TIM THAY ModernWpf.dll SAU KHI RESTORE! ***" -ForegroundColor Red
+    exit 1
+}
+Write-Host "  -> ModernWpf san sang." -ForegroundColor Green
+
 # --- STEP 1: Kill Inventor ---
 Write-Host "[1/7] Kiem tra Inventor..." -ForegroundColor Yellow
 $invProcess = Get-Process -Name "Inventor" -ErrorAction SilentlyContinue
@@ -113,6 +139,21 @@ $addinXml += "`r`n" + '</Addin>'
 [System.IO.File]::WriteAllText("VinTed.addin", $addinXml, [System.Text.Encoding]::UTF8)
 Write-Host "  -> Da tao VinTed.addin" -ForegroundColor Green
 
+# --- STEP 6.5: Build AutoCAD Plugin ---
+Write-Host "[6.5/7] Dang build VinTed.AutoCAD.csproj..." -ForegroundColor Yellow
+$autocadPath = "C:\Program Files\Autodesk\AutoCAD 2024"
+if (Test-Path "$autocadPath\accoremgd.dll") {
+    $buildArgsCad = @(".\AutoCAD_Plugin\VinTed.AutoCAD.csproj", "/t:Rebuild", "/p:Configuration=Release", "/verbosity:minimal", "/p:AutoCADPath=$autocadPath")
+    & $msbuild $buildArgsCad
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "  -> Warning: Build AutoCAD Plugin that bai!" -ForegroundColor Red
+    } else {
+        Write-Host "  -> Build AutoCAD Plugin thanh cong." -ForegroundColor Green
+    }
+} else {
+    Write-Host "  -> Bo qua build AutoCAD Plugin (Khong tim thay AutoCAD 2024)" -ForegroundColor Gray
+}
+
 # --- STEP 7: Deploy ---
 Write-Host "[7/7] Deploy vao AppData..." -ForegroundColor Yellow
 if (!(Test-Path $appDataFolder)) {
@@ -121,6 +162,9 @@ if (!(Test-Path $appDataFolder)) {
 Copy-Item "$buildDir\*.*" -Destination $appDataFolder -Force -ErrorAction SilentlyContinue
 Copy-Item "VinTed.addin" -Destination $appDataFolder -Force
 if (Test-Path ".\Assets") { Copy-Item ".\Assets" -Destination "$appDataFolder\Assets" -Recurse -Force }
+if (Test-Path ".\AutoCAD_Plugin\bin\Release\VinTed.AutoCAD.dll") {
+    Copy-Item ".\AutoCAD_Plugin\bin\Release\VinTed.AutoCAD.dll" -Destination $appDataFolder -Force
+}
 
 Write-Host "  -> Da deploy vao: $appDataFolder" -ForegroundColor Green
 Write-Host ""

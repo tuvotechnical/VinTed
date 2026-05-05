@@ -173,6 +173,7 @@ try {
 
     # --- STEP 5: Xac minh cai dat ---
     Write-Host "  [5/6] Xac minh phien ban da cai..." -ForegroundColor Yellow
+    $dllPath = [System.IO.Path]::Combine($installPath, "VinTed.dll")
     if (Test-Path $dllPath) {
         $fileVer = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dllPath)
         $installedVer = $fileVer.FileVersion

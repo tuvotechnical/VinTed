@@ -125,6 +125,14 @@ foreach ($f in $filesToZip) {
     }
 }
 
+# Copy thu muc Assets (SVG icons) vao ZIP
+if (Test-Path ".\Assets") {
+    Copy-Item ".\Assets" -Destination "$tempZipDir\Assets" -Recurse -Force
+    Write-Host "  -> Da them thu muc Assets vao ZIP." -ForegroundColor Green
+} else {
+    Write-Host "  WARN: Khong tim thay thu muc Assets!" -ForegroundColor Red
+}
+
 # Tao file INSTALL.txt huong dan cai dat
 $installLines = @(
     "==============================================",

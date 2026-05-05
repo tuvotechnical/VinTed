@@ -168,6 +168,11 @@ Mở **PowerShell** tại thư mục dự án và chạy:
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
+**LƯU Ý QUAN TRỌNG (Workflow):**
+* Trong quá trình sửa code và phát triển, **CHỈ** cần chạy lệnh `build.ps1` để biên dịch và kiểm tra tính năng trực tiếp trên máy (Inventor).
+* Script này sẽ tự động đóng Inventor, build DLL mới và deploy vào AppData để bạn có thể mở Inventor lên và test ngay lập tức.
+* **KHÔNG** tự ý chạy lệnh commit hay tạo release trừ khi có yêu cầu cụ thể từ người dùng.
+
 **Quá trình script thực hiện:**
 1. Đọc version từ `version.json` → inject vào `AssemblyInfo.cs`.
 2. Kiểm tra/restore thư viện `ModernWpf` + `ModernWpf.Controls` vào `packages\ModernWpfUI\lib\net45` nếu thiếu.
@@ -183,7 +188,7 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1
 
 ## 6. Hướng dẫn Commit & Release
 
-Sử dụng script `commit.ps1` để tự động hóa toàn bộ quy trình:
+**CHỈ CHẠY KHI CÓ YÊU CẦU XÁC NHẬN TỪ NGƯỜI DÙNG.**
 
 ```powershell
 # Bump patch (1.0.0 -> 1.0.1) — mặc định
@@ -195,6 +200,8 @@ powershell -ExecutionPolicy Bypass -File .\commit.ps1 -Message "Them tinh nang A
 # Bump major (1.1.0 -> 2.0.0)
 powershell -ExecutionPolicy Bypass -File .\commit.ps1 -Message "Version lon" -BumpType major
 ```
+
+**LƯU Ý:** Lệnh này sẽ thực hiện tăng version, đóng gói ZIP và tạo Release công khai trên GitHub. Chỉ sử dụng khi tính năng đã hoàn thiện và người dùng yêu cầu "Commit và Release".
 
 **Quy trình tự động:**
 1. Đọc version hiện tại từ `version.json`.

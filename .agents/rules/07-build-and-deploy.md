@@ -39,3 +39,8 @@ Mỗi khi được yêu cầu "Build", phải tạo/cập nhật script `build.p
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\build.ps1
 ```
+
+## Quy trình Phát triển (CRITICAL)
+- **Luôn luôn** chạy `build.ps1` sau khi thay đổi code để kiểm tra tính đúng đắn.
+- **TUYỆT ĐỐI KHÔNG** tự ý chạy `commit.ps1` hoặc tạo GitHub Release.
+- Chỉ thực hiện `commit.ps1` khi người dùng yêu cầu rõ ràng bằng các cụm từ như: "Commit và Release", "Tạo phiên bản mới", "Publish".

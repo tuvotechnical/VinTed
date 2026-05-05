@@ -25,7 +25,7 @@ Write-Host ""
 
 try {
     # --- STEP 1: Lay thong tin release moi nhat ---
-    Write-Host "  [1/5] Kiem tra phien ban moi nhat..." -ForegroundColor Yellow
+    Write-Host "  [1/6] Kiem tra phien ban moi nhat..." -ForegroundColor Yellow
 
     $headers = @{ "User-Agent" = "VinTed-Installer" }
     $release = Invoke-RestMethod -Uri $apiUrl -Headers $headers
@@ -44,29 +44,53 @@ try {
     $fileName = $asset.name
     $fileSize = [math]::Round($asset.size / 1KB, 1)
 
+    # Parse expected version tu tag (vd: v1.2.9 -> 1.2.9)
+    $expectedVersion = $version -replace '^v', ''
+
     Write-Host "  -> Phien ban: $releaseName ($version)" -ForegroundColor Green
     Write-Host "  -> File:      $fileName ($fileSize KB)" -ForegroundColor Gray
 
-    # --- STEP 2: Dong Inventor (neu dang chay) ---
-    Write-Host "  [2/5] Kiem tra Inventor..." -ForegroundColor Yellow
-    $invProcess = Get-Process -Name "Inventor" -ErrorAction SilentlyContinue
-    if ($invProcess) {
-        Write-Host "  -> Inventor dang chay. Dong Inventor de cai dat..." -ForegroundColor Red
+    # --- STEP 2: Dong Inventor (bat buoc) ---
+    Write-Host "  [2/6] Kiem tra Inventor..." -ForegroundColor Yellow
+    $invProcesses = @("Inventor", "InvRaster", "InventorCoreConsole")
+    $anyRunning = $false
+    foreach ($procName in $invProcesses) {
+        $proc = Get-Process -Name $procName -ErrorAction SilentlyContinue
+        if ($proc) { $anyRunning = $true; break }
+    }
+
+    if ($anyRunning) {
+        Write-Host "  -> Inventor dang chay. PHAI dong Inventor de cai dat..." -ForegroundColor Red
         Write-Host ""
         $confirm = Read-Host "     Nhap 'Y' de dong Inventor va tiep tuc, hoac 'N' de huy"
         if ($confirm -ne 'Y' -and $confirm -ne 'y') {
             Write-Host "  -> Da huy cai dat." -ForegroundColor Gray
             return
         }
-        Stop-Process -Name "Inventor" -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 2
+        foreach ($procName in $invProcesses) {
+            Stop-Process -Name $procName -Force -ErrorAction SilentlyContinue
+        }
+        # Doi lau hon de dam bao DLL duoc giai phong hoan toan
+        Write-Host "  -> Dang doi Inventor dong hoan toan..." -ForegroundColor Gray
+        Start-Sleep -Seconds 4
+
+        # Kiem tra lai lan nua
+        $stillRunning = $false
+        foreach ($procName in $invProcesses) {
+            $proc = Get-Process -Name $procName -ErrorAction SilentlyContinue
+            if ($proc) { $stillRunning = $true; break }
+        }
+        if ($stillRunning) {
+            Write-Host "  !! Inventor van chua dong hoan toan. Thu dong thu cong va chay lai." -ForegroundColor Red
+            return
+        }
         Write-Host "  -> Da dong Inventor." -ForegroundColor Green
     } else {
         Write-Host "  -> OK (Inventor khong chay)." -ForegroundColor Gray
     }
 
     # --- STEP 3: Tai file ---
-    Write-Host "  [3/5] Dang tai $fileName..." -ForegroundColor Yellow
+    Write-Host "  [3/6] Dang tai $fileName..." -ForegroundColor Yellow
 
     if (Test-Path $tempZip) { Remove-Item $tempZip -Force }
 
@@ -76,6 +100,7 @@ try {
         Start-BitsTransfer -Source $downloadUrl -Destination $tempZip -DisplayName "VinTed"
     }
     catch {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
         $wc = New-Object System.Net.WebClient
         $wc.Headers.Add("User-Agent", "VinTed-Installer")
         $wc.DownloadFile($downloadUrl, $tempZip)
@@ -88,11 +113,28 @@ try {
     Write-Host "  -> Tai thanh cong." -ForegroundColor Green
 
     # --- STEP 4: Giai nen va cai dat ---
-    Write-Host "  [4/5] Cai dat vao Inventor..." -ForegroundColor Yellow
+    Write-Host "  [4/6] Cai dat vao Inventor..." -ForegroundColor Yellow
 
     # Tao thu muc neu chua co
     if (!(Test-Path $installPath)) {
         New-Item -ItemType Directory -Path $installPath -Force | Out-Null
+    }
+
+    # Xoa DLL cu truoc khi giai nen (tranh file lock an)
+    $dllPath = [System.IO.Path]::Combine($installPath, "VinTed.dll")
+    if (Test-Path $dllPath) {
+        try {
+            Remove-Item $dllPath -Force -ErrorAction Stop
+            Write-Host "  -> Da xoa DLL cu." -ForegroundColor Gray
+        }
+        catch {
+            Write-Host ""
+            Write-Host "  !! KHONG THE GHI DE VinTed.dll!" -ForegroundColor Red
+            Write-Host "  !! File dang bi khoa boi Inventor hoac process khac." -ForegroundColor Red
+            Write-Host "  !! Hay dong HOAN TOAN Inventor va chay lai lenh cai dat." -ForegroundColor Yellow
+            Write-Host ""
+            return
+        }
     }
 
     # Giai nen (ghi de file cu)
@@ -100,7 +142,9 @@ try {
     $zip = [System.IO.Compression.ZipFile]::OpenRead($tempZip)
     foreach ($entry in $zip.Entries) {
         if ([string]::IsNullOrEmpty($entry.Name)) { continue }  # Bo qua thu muc
-        $destPath = [System.IO.Path]::Combine($installPath, $entry.Name)
+
+        # Giu nguyen cau truc thu muc trong ZIP
+        $destPath = [System.IO.Path]::Combine($installPath, $entry.FullName)
         $destDir = [System.IO.Path]::GetDirectoryName($destPath)
         if (!(Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
         [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $destPath, $true)
@@ -112,8 +156,33 @@ try {
 
     Write-Host "  -> Da cai dat vao: $installPath" -ForegroundColor Green
 
-    # --- STEP 5: Unblock files ---
-    Write-Host "  [5/5] Mo khoa file (Unblock)..." -ForegroundColor Yellow
+    # --- STEP 5: Xac minh cai dat ---
+    Write-Host "  [5/6] Xac minh phien ban da cai..." -ForegroundColor Yellow
+    if (Test-Path $dllPath) {
+        $fileVer = [System.Diagnostics.FileVersionInfo]::GetVersionInfo($dllPath)
+        $installedVer = $fileVer.FileVersion
+        Write-Host "  -> DLL version: $installedVer" -ForegroundColor Cyan
+
+        # So sanh voi expected version
+        if ($installedVer -like "$expectedVersion*") {
+            Write-Host "  -> Version KHOP! Cai dat thanh cong." -ForegroundColor Green
+        } else {
+            Write-Host "  !! CANH BAO: Version DLL ($installedVer) khong khop voi release ($expectedVersion)!" -ForegroundColor Red
+            Write-Host "  !! Thu dong Inventor va chay lai lenh cai dat." -ForegroundColor Yellow
+        }
+    } else {
+        Write-Host "  !! CANH BAO: Khong tim thay VinTed.dll sau khi cai dat!" -ForegroundColor Red
+    }
+
+    # Xoa file update_skip.txt cu (reset trang thai skip)
+    $skipFile = [System.IO.Path]::Combine($installPath, "update_skip.txt")
+    if (Test-Path $skipFile) {
+        Remove-Item $skipFile -Force -ErrorAction SilentlyContinue
+        Write-Host "  -> Da reset trang thai update." -ForegroundColor Gray
+    }
+
+    # --- STEP 6: Unblock files ---
+    Write-Host "  [6/6] Mo khoa file (Unblock)..." -ForegroundColor Yellow
     Get-ChildItem -Path $installPath -Recurse | Unblock-File -ErrorAction SilentlyContinue
     Write-Host "  -> Hoan tat." -ForegroundColor Green
 
@@ -127,7 +196,7 @@ try {
     Write-Host "  ║   Tab 'VinTed' se xuat hien          ║" -ForegroundColor Green
     Write-Host "  ║   trong Ribbon khi mo ban ve.        ║" -ForegroundColor Green
     Write-Host "  ║                                      ║" -ForegroundColor Green
-    Write-Host "  ╚══════════════════════════════════════╗" -ForegroundColor Green
+    Write-Host "  ╚══════════════════════════════════════╝" -ForegroundColor Green
     Write-Host ""
     Write-Host "  Phien ban: $version" -ForegroundColor White
     Write-Host "  Thu muc:   $installPath" -ForegroundColor Gray
@@ -139,9 +208,10 @@ catch {
     Write-Host "  !! LOI: $($_.Exception.Message)" -ForegroundColor Red
     Write-Host ""
     Write-Host "  Thu cai dat thu cong:" -ForegroundColor Yellow
-    Write-Host "  1. Tai file ZIP tu: https://github.com/$repoOwner/$repoName/releases/latest" -ForegroundColor White
-    Write-Host "  2. Giai nen vao: $installPath" -ForegroundColor White
-    Write-Host "  3. Khoi dong lai Inventor." -ForegroundColor White
+    Write-Host "  1. DONG HOAN TOAN Inventor truoc." -ForegroundColor White
+    Write-Host "  2. Tai file ZIP tu: https://github.com/$repoOwner/$repoName/releases/latest" -ForegroundColor White
+    Write-Host "  3. Giai nen vao: $installPath" -ForegroundColor White
+    Write-Host "  4. Khoi dong lai Inventor." -ForegroundColor White
     Write-Host ""
 
     # Don dep file tam

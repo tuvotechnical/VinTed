@@ -13,8 +13,8 @@ Tài liệu này tổng hợp các lệnh và quy trình tự động hóa (CI/C
 ## 2. Các Script Tiện ích
 
 Có 2 kịch bản chính khi phát triển:
-1. **Lập trình và test liên tục:** Chạy `build.ps1`
-2. **Ra mắt phiên bản mới:** Chạy `commit.ps1`
+1. **Lập trình và test liên tục:** Chạy `build.ps1` (Thực hiện thường xuyên sau mỗi thay đổi code).
+2. **Ra mắt phiên bản mới:** Chạy `commit.ps1` (**CHỈ** thực hiện khi người dùng yêu cầu).
 
 ### 2.1. Build nội bộ (`build.ps1`)
 Dùng khi bạn đang code tính năng và muốn build nhanh để test thử trong Inventor mà không tạo version mới hay up lên GitHub.
@@ -78,7 +78,9 @@ Dùng khi bạn đã hoàn thiện tính năng và muốn **phát hành phiên b
 ## 4. Tóm tắt luồng công việc lý tưởng
 
 1. Viết code mới...
-2. Nhấn `.\build.ps1` để debug/test locally.
-3. Kiểm tra mọi thứ ok, cập nhật `README.md` nếu cần.
-4. Chạy `.\commit.ps1 -Message "Hoàn thành chức năng XYZ"`
-5. Done. Code đã lên GitHub, Release đã được tạo, và máy khách hàng dùng Add-in sẽ tự nhận thông báo báo có bản update!
+2. Cập nhật `README.md` để mô tả tính năng mới (Bắt buộc theo Coding Standard).
+3. Nhấn `.\build.ps1` để biên dịch, deploy và test locally trên Inventor.
+4. Lặp lại bước 1-3 cho đến khi tính năng hoàn thiện và chạy đúng ý người dùng.
+5. **Dừng lại ở đây.** KHÔNG commit/release.
+6. Khi người dùng xác nhận: "Commit và Release", mới chạy `.\commit.ps1 -Message "Hoàn thành chức năng XYZ"`.
+7. Done. Code đã lên GitHub, Release đã được tạo!

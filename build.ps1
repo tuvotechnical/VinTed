@@ -59,16 +59,17 @@ if (!(Test-Path $modernWpfDll) -or !(Test-Path $modernWpfControlsDll)) {
 }
 Write-Host "  -> ModernWpf san sang." -ForegroundColor Green
 
-# --- STEP 1: Kill Inventor ---
-Write-Host "[1/7] Kiem tra Inventor..." -ForegroundColor Yellow
-$invProcess = Get-Process -Name "Inventor" -ErrorAction SilentlyContinue
-if ($invProcess) {
-    Write-Host "  -> Dang dong Inventor..." -ForegroundColor Red
-    Stop-Process -Name "Inventor" -Force -ErrorAction SilentlyContinue
-    Start-Sleep -Seconds 2
-    Write-Host "  -> Da dong Inventor." -ForegroundColor Green
-} else {
-    Write-Host "  -> Inventor khong chay." -ForegroundColor Gray
+# --- STEP 1: Kill Inventor & AutoCAD ---
+Write-Host "[1/7] Kiem tra Inventor/AutoCAD..." -ForegroundColor Yellow
+$processes = @("Inventor", "acad", "accoreconsole")
+foreach ($procName in $processes) {
+    $proc = Get-Process -Name $procName -ErrorAction SilentlyContinue
+    if ($proc) {
+        Write-Host "  -> Dang dong $procName..." -ForegroundColor Red
+        Stop-Process -Name $procName -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 1
+        Write-Host "  -> Da dong $procName." -ForegroundColor Green
+    }
 }
 
 # --- STEP 2: Clean Build ---

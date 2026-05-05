@@ -50,9 +50,14 @@ try {
     Write-Host "  -> Phien ban: $releaseName ($version)" -ForegroundColor Green
     Write-Host "  -> File:      $fileName ($fileSize KB)" -ForegroundColor Gray
 
+    $inventorWasRunning = $false
+    if (Get-Process -Name "Inventor" -ErrorAction SilentlyContinue) {
+        $inventorWasRunning = $true
+    }
+
     # --- STEP 2: Dong Inventor (bat buoc) ---
     Write-Host "  [2/6] Kiem tra Inventor/AutoCAD..." -ForegroundColor Yellow
-    $invProcesses = @("Inventor", "InvRaster", "InventorCoreConsole", "acad")
+    $invProcesses = @("Inventor", "InvRaster", "InventorCoreConsole", "acad", "accoreconsole")
     $anyRunning = $false
     foreach ($procName in $invProcesses) {
         $proc = Get-Process -Name $procName -ErrorAction SilentlyContinue
@@ -195,6 +200,17 @@ try {
     Write-Host "  [6/6] Mo khoa file (Unblock)..." -ForegroundColor Yellow
     Get-ChildItem -Path $installPath -Recurse | Unblock-File -ErrorAction SilentlyContinue
     Write-Host "  -> Hoan tat." -ForegroundColor Green
+
+    # --- STEP 7: Tu dong mo lai Inventor ---
+    if ($inventorWasRunning) {
+        Write-Host "  [7/7] Dang khoi dong lai Inventor..." -ForegroundColor Yellow
+        # Inventor system alias is usually just Inventor.exe or via protocol / shell execute.
+        # But starting "Inventor.exe" might require it to be in PATH. 
+        # Alternatively we can start via COM or try start process "Inventor" (which works if app paths are registered).
+        # We will just try Start-Process "Inventor" and handle it silently.
+        Start-Process "Inventor" -ErrorAction SilentlyContinue
+        Write-Host "  -> Da gui lenh khoi dong Inventor." -ForegroundColor Green
+    }
 
     # --- HOAN TAT ---
     Write-Host ""

@@ -86,7 +86,6 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
 * **Tối ưu hiệu suất xuất DWG:**
   * **INI cực đoan:** AutoCAD 2004 (dung lượng nhỏ nhất), `REPLACE SPLINE=Yes` (thay spline phức tạp bằng polyline), `CHORD TOLERANCE=0.01` (giảm tải hình học đường cong), `USE ACI=Yes` (bảng màu ACI siêu nhẹ).
   * **Purge trước xuất:** Tự động xóa `SketchedSymbolDefinition` và `AutoCADBlockDefinition` không được tham chiếu, giảm khối lượng dữ liệu Translator phải dịch.
-  * **Purge sau gộp:** Script AutoCAD tự động chạy `-PURGE ALL` trên bản vẽ gộp cuối cùng để dọn dẹp block/layer/style không dùng.
   * **Đóng băng môi trường:** Tắt `BackgroundUpdates`, bật `DeferUpdates`, cô lập Vault Addin — tránh mọi xử lý nền gây trễ.
   * **GC sau mỗi sheet:** `GC.Collect()` + `GC.WaitForPendingFinalizers()` giải phóng COM objects, giữ ổn định bộ nhớ cho bản vẽ nhiều trang.
   * **Tự động dò AutoCAD:** Tự quét `C:\Program Files\Autodesk\AutoCAD *` để tìm phiên bản AutoCAD mới nhất, không hardcode đường dẫn.

@@ -815,10 +815,10 @@ namespace VinTed.ExportAutoCAD
             };
             System.IO.File.WriteAllLines(argsFile, lines);
 
-            // Tạo file script cho AutoCAD: NetLoad plugin -> Gộp file -> Purge bản vẽ cuối -> Lưu
+            // Tạo file script cho AutoCAD: NetLoad plugin -> Gộp file -> Lưu
             string scrFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "VinTed_Merge.scr");
             string logFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "VinTed_Merge_Log.txt");
-            string scrContent = String.Format("SECURELOAD\r\n0\r\nNETLOAD \"{0}\"\r\nVINTED_MERGE\r\n-PURGE\r\nALL\r\n*\r\nN\r\nQSAVE\r\n", pluginPath.Replace("\\", "\\\\"));
+            string scrContent = String.Format("SECURELOAD\r\n0\r\nNETLOAD \"{0}\"\r\nVINTED_MERGE\r\nQSAVE\r\n", pluginPath.Replace("\\", "\\\\"));
             System.IO.File.WriteAllText(scrFile, scrContent);
 
             // Chạy accoreconsole

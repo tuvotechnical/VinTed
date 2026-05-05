@@ -51,8 +51,8 @@ try {
     Write-Host "  -> File:      $fileName ($fileSize KB)" -ForegroundColor Gray
 
     # --- STEP 2: Dong Inventor (bat buoc) ---
-    Write-Host "  [2/6] Kiem tra Inventor..." -ForegroundColor Yellow
-    $invProcesses = @("Inventor", "InvRaster", "InventorCoreConsole")
+    Write-Host "  [2/6] Kiem tra Inventor/AutoCAD..." -ForegroundColor Yellow
+    $invProcesses = @("Inventor", "InvRaster", "InventorCoreConsole", "acad")
     $anyRunning = $false
     foreach ($procName in $invProcesses) {
         $proc = Get-Process -Name $procName -ErrorAction SilentlyContinue
@@ -60,9 +60,9 @@ try {
     }
 
     if ($anyRunning) {
-        Write-Host "  -> Inventor dang chay. PHAI dong Inventor de cai dat..." -ForegroundColor Red
+        Write-Host "  -> Phan mem (Inventor hoac AutoCAD) dang chay. PHAI dong de cai dat..." -ForegroundColor Red
         Write-Host ""
-        $confirm = Read-Host "     Nhap 'Y' de dong Inventor va tiep tuc, hoac 'N' de huy"
+        $confirm = Read-Host "     Nhap 'Y' de dong phan mem va tiep tuc, hoac 'N' de huy"
         if ($confirm -ne 'Y' -and $confirm -ne 'y') {
             Write-Host "  -> Da huy cai dat." -ForegroundColor Gray
             return
@@ -71,7 +71,7 @@ try {
             Stop-Process -Name $procName -Force -ErrorAction SilentlyContinue
         }
         # Doi lau hon de dam bao DLL duoc giai phong hoan toan
-        Write-Host "  -> Dang doi Inventor dong hoan toan..." -ForegroundColor Gray
+        Write-Host "  -> Dang doi phan mem dong hoan toan..." -ForegroundColor Gray
         Start-Sleep -Seconds 4
 
         # Kiem tra lai lan nua
@@ -81,12 +81,12 @@ try {
             if ($proc) { $stillRunning = $true; break }
         }
         if ($stillRunning) {
-            Write-Host "  !! Inventor van chua dong hoan toan. Thu dong thu cong va chay lai." -ForegroundColor Red
+            Write-Host "  !! Phan mem van chua dong hoan toan. Thu dong thu cong va chay lai." -ForegroundColor Red
             return
         }
-        Write-Host "  -> Da dong Inventor." -ForegroundColor Green
+        Write-Host "  -> Da dong phan mem." -ForegroundColor Green
     } else {
-        Write-Host "  -> OK (Inventor khong chay)." -ForegroundColor Gray
+        Write-Host "  -> OK (Khong chay phan mem nao)." -ForegroundColor Gray
     }
 
     # --- STEP 3: Tai file ---
@@ -120,23 +120,6 @@ try {
         New-Item -ItemType Directory -Path $installPath -Force | Out-Null
     }
 
-    # Xoa DLL cu truoc khi giai nen (tranh file lock an)
-    $dllPath = [System.IO.Path]::Combine($installPath, "VinTed.dll")
-    if (Test-Path $dllPath) {
-        try {
-            Remove-Item $dllPath -Force -ErrorAction Stop
-            Write-Host "  -> Da xoa DLL cu." -ForegroundColor Gray
-        }
-        catch {
-            Write-Host ""
-            Write-Host "  !! KHONG THE GHI DE VinTed.dll!" -ForegroundColor Red
-            Write-Host "  !! File dang bi khoa boi Inventor hoac process khac." -ForegroundColor Red
-            Write-Host "  !! Hay dong HOAN TOAN Inventor va chay lai lenh cai dat." -ForegroundColor Yellow
-            Write-Host ""
-            return
-        }
-    }
-
     # Giai nen (ghi de file cu)
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $zip = [System.IO.Compression.ZipFile]::OpenRead($tempZip)
@@ -147,7 +130,34 @@ try {
         $destPath = [System.IO.Path]::Combine($installPath, $entry.FullName)
         $destDir = [System.IO.Path]::GetDirectoryName($destPath)
         if (!(Test-Path $destDir)) { New-Item -ItemType Directory -Path $destDir -Force | Out-Null }
-        [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $destPath, $true)
+        
+        # Xoa file cu truoc neu co de tranh loi File Locked hoac ExtractToFile bi fail
+        if (Test-Path $destPath) {
+            try {
+                Remove-Item $destPath -Force -ErrorAction Stop
+            }
+            catch {
+                Write-Host ""
+                Write-Host "  !! KHONG THE GHI DE FILE: $($entry.Name)" -ForegroundColor Red
+                Write-Host "  !! File dang bi khoa boi Inventor, AutoCAD hoac process khac." -ForegroundColor Red
+                Write-Host "  !! Hay dong HOAN TOAN cac phan mem va chay lai lenh cai dat." -ForegroundColor Yellow
+                Write-Host ""
+                $zip.Dispose()
+                return
+            }
+        }
+
+        try {
+            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $destPath, $true)
+        }
+        catch {
+            Write-Host ""
+            Write-Host "  !! LOI KHI GIAI NEN FILE: $($entry.Name)" -ForegroundColor Red
+            Write-Host "  !! Chi tiet: $($_.Exception.Message)" -ForegroundColor Red
+            Write-Host ""
+            $zip.Dispose()
+            return
+        }
     }
     $zip.Dispose()
 

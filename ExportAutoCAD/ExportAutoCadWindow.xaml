@@ -7,7 +7,6 @@
         Title="VinTed — Export AutoCAD/DWG"
         Width="620" SizeToContent="Height"
         WindowStartupLocation="CenterScreen"
-        Topmost="True"
         ResizeMode="NoResize"
         FontFamily="Segoe UI">
 

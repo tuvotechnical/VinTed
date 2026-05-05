@@ -293,12 +293,10 @@ namespace VinTed.ExportAutoCAD
             {
                 try
                 {
-                    originalScreenUpdating = _invApp.ScreenUpdating;
                     originalSilentOperation = _invApp.SilentOperation;
                     originalBackgroundUpdates = _invApp.DrawingOptions.EnableBackgroundUpdates;
                     originalDeferUpdates = idwDoc.DrawingSettings.DeferUpdates;
 
-                    if (opts.DisableScreenUpdating) _invApp.ScreenUpdating = false;
                     if (opts.EnableSilentOperation) _invApp.SilentOperation = true;
                     
                     // Tối ưu hóa theo báo cáo: Tắt Background Updates và bật DeferUpdates
@@ -351,7 +349,6 @@ namespace VinTed.ExportAutoCAD
             {
                 try
                 {
-                    _invApp.ScreenUpdating = originalScreenUpdating;
                     _invApp.SilentOperation = originalSilentOperation;
                     _invApp.DrawingOptions.EnableBackgroundUpdates = originalBackgroundUpdates;
                     idwDoc.DrawingSettings.DeferUpdates = originalDeferUpdates;
@@ -738,10 +735,28 @@ namespace VinTed.ExportAutoCAD
                 throw new InvalidOperationException("Không tìm thấy VinTed.AutoCAD.dll để gộp file.");
             }
 
-            string autocadPath = @"C:\Program Files\Autodesk\AutoCAD 2024\accoreconsole.exe";
-            if (!System.IO.File.Exists(autocadPath))
+            string autocadPath = String.Empty;
+            string autodeskDir = @"C:\Program Files\Autodesk";
+            if (System.IO.Directory.Exists(autodeskDir))
             {
-                throw new InvalidOperationException("Không tìm thấy AutoCAD Core Console tại: " + autocadPath);
+                // Sắp xếp giảm dần để ưu tiên AutoCAD phiên bản mới nhất
+                string[] acadDirs = System.IO.Directory.GetDirectories(autodeskDir, "AutoCAD *");
+                Array.Sort(acadDirs);
+                Array.Reverse(acadDirs);
+                foreach (string dir in acadDirs)
+                {
+                    string path = System.IO.Path.Combine(dir, "accoreconsole.exe");
+                    if (System.IO.File.Exists(path))
+                    {
+                        autocadPath = path;
+                        break;
+                    }
+                }
+            }
+
+            if (String.IsNullOrEmpty(autocadPath) || !System.IO.File.Exists(autocadPath))
+            {
+                throw new InvalidOperationException("Không tìm thấy AutoCAD Core Console (accoreconsole.exe) trên máy tính. Hãy đảm bảo đã cài đặt AutoCAD.");
             }
 
             // Ghi cấu hình ra file args

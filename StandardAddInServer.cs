@@ -418,7 +418,15 @@ namespace VinTed
 
                 DrawingDocument drawDoc = (DrawingDocument)activeDoc;
                 ExportAutoCAD.ExportAutoCadWindow window = new ExportAutoCAD.ExportAutoCadWindow(_invApp, drawDoc);
-                window.Show();
+                
+                try
+                {
+                    System.Windows.Interop.WindowInteropHelper helper = new System.Windows.Interop.WindowInteropHelper(window);
+                    helper.Owner = new IntPtr(_invApp.MainFrameHWND);
+                }
+                catch { }
+
+                window.ShowDialog();
             }
             catch (Exception ex)
             {

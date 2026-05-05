@@ -173,7 +173,7 @@ namespace VinTed.ExportAutoCAD
             string iniPath = System.IO.Path.Combine(addinFolder, "ExportToDWG.ini");
 
             string contents = "\r\n[EXPORT SELECT OPTIONS]\r\n" +
-                "AUTOCAD VERSION=AutoCAD 2007\r\n" +
+                "AUTOCAD VERSION=AutoCAD 2004\r\n" +
                 "CREATE AUTOCAD MECHANICAL=No\r\n" +
                 "USE TRANSMITTAL=No\r\n" +
                 "USE CUSTOMIZE=No\r\n" +
@@ -182,7 +182,7 @@ namespace VinTed.ExportAutoCAD
                 "CREATE LAYER GROUP=No\r\n" +
                 "PARTS ONLY=No\r\n" +
                 "REPLACE SPLINE=No\r\n" +
-                "CHORD TOLERANCE=0.001000\r\n" +
+                "CHORD TOLERANCE=0.010000\r\n" +
                 "[EXPORT PROPERTIES]\r\n" +
                 "SELECTED PROPERTIES=\r\n" +
                 "[EXPORT DESTINATION]\r\n" +
@@ -437,6 +437,10 @@ namespace VinTed.ExportAutoCAD
 
             ExportSingleSheet(activeSheet, filePath);
             _exportedCount = 1;
+
+            // Giải phóng bộ nhớ
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
 
             Report(1, 1, activeSheet.Name, filePath, "Hoàn tất xuất sheet hiện tại");
         }

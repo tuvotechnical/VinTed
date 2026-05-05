@@ -108,6 +108,7 @@ $filesToZip = @(
     "$buildDir\VinTed.dll",
     "$buildDir\ModernWpf.dll",
     "$buildDir\ModernWpf.Controls.dll",
+    ".\AutoCAD_Plugin\bin\Release\VinTed.AutoCAD.dll",
     ".\VinTed.addin"
 )
 

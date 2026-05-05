@@ -195,10 +195,10 @@ namespace VinTed.ExportAutoCAD
                 "SYMBOLS ARE BLOCKED=Yes\r\n" +
                 "AUTOCAD TEMPLATE=\r\n" +
                 "DESTINATION DXF=No\r\n" +
-                "USE ACI FOR ENTITIES AND LAYERS=No\r\n" +
+                "USE ACI FOR ENTITIES AND LAYERS=Yes\r\n" +
                 "ALLOW RASTER VIEWS=No\r\n" +
-                "SHOW DESTINATION PAGE=Yes\r\n" +
-                "ENABLE POSTPROCESS=Yes\r\n" +
+                "SHOW DESTINATION PAGE=No\r\n" +
+                "ENABLE POSTPROCESS=No\r\n" +
                 "[EXPORT LINE TYPE & LINE SCALE]\r\n" +
                 "LINE TYPE FILE=C:\\Users\\Public\\Documents\\Autodesk\\Inventor " + version +
                 "\\COMPATIBILITY\\Support\\invISO.lin\r\n" +
@@ -271,7 +271,7 @@ namespace VinTed.ExportAutoCAD
                 string iniPath = WriteIniFile(
                     opts.OutputFolder,
                     opts.ExportSpace,
-                    opts.SheetMode == SheetExportMode.AllSheets);
+                    false); // Báo cáo: "Cấm Inventor xuất toàn bộ các trang cùng lúc" (All Sheets = No)
 
                 if (!System.IO.File.Exists(iniPath))
                 {
@@ -285,6 +285,9 @@ namespace VinTed.ExportAutoCAD
             Transaction transaction = null;
             bool originalScreenUpdating = true;
             bool originalSilentOperation = false;
+            bool originalBackgroundUpdates = false;
+            bool originalDeferUpdates = false;
+            ApplicationAddIn vaultAddIn = null;
 
             try
             {
@@ -292,8 +295,19 @@ namespace VinTed.ExportAutoCAD
                 {
                     originalScreenUpdating = _invApp.ScreenUpdating;
                     originalSilentOperation = _invApp.SilentOperation;
+                    originalBackgroundUpdates = _invApp.DrawingOptions.EnableBackgroundUpdates;
+                    originalDeferUpdates = idwDoc.DrawingSettings.DeferUpdates;
+
                     if (opts.DisableScreenUpdating) _invApp.ScreenUpdating = false;
                     if (opts.EnableSilentOperation) _invApp.SilentOperation = true;
+                    
+                    // Tối ưu hóa theo báo cáo: Tắt Background Updates và bật DeferUpdates
+                    _invApp.DrawingOptions.EnableBackgroundUpdates = false;
+                    idwDoc.DrawingSettings.DeferUpdates = true;
+
+                    // Tắt Vault Addin để tránh vi độ trễ check-in/out
+                    vaultAddIn = _invApp.ApplicationAddIns.get_ItemById("{48B682BC-42E6-4953-84C5-3D253B52E77B}");
+                    if (vaultAddIn != null && vaultAddIn.Activated) vaultAddIn.Deactivate();
                 }
                 catch (Exception) { }
 
@@ -339,6 +353,10 @@ namespace VinTed.ExportAutoCAD
                 {
                     _invApp.ScreenUpdating = originalScreenUpdating;
                     _invApp.SilentOperation = originalSilentOperation;
+                    _invApp.DrawingOptions.EnableBackgroundUpdates = originalBackgroundUpdates;
+                    idwDoc.DrawingSettings.DeferUpdates = originalDeferUpdates;
+
+                    if (vaultAddIn != null && !vaultAddIn.Activated) vaultAddIn.Activate();
                 }
                 catch (Exception) { }
 
@@ -371,17 +389,38 @@ namespace VinTed.ExportAutoCAD
                 throw new InvalidOperationException("Không thể đổi tên sheet.");
             }
 
-            Report(0, totalSheets, String.Empty, outputFilePath, "Đang xuất tất cả sheet...");
-            PumpMessages();
+            _exportedCount = 0;
 
-            if (_stopRequested) { return; }
+            for (int i = 1; i <= totalSheets; i++)
+            {
+                PumpMessages();
+                if (_stopRequested)
+                {
+                    Report(_exportedCount, totalSheets, String.Empty, String.Empty, "Đã dừng theo yêu cầu.");
+                    return;
+                }
 
-            _dataMedium.FileName = outputFilePath;
-            _dwgAddIn.SaveCopyAs(_document, _context, _options, _dataMedium);
-            _exportedCount = totalSheets;
+                Sheet sheet = idwDoc.Sheets[i];
+                if (sheet == null) { continue; }
 
-            Report(totalSheets, totalSheets, String.Empty, outputFilePath,
-                String.Format("Hoàn tất xuất {0} sheet", totalSheets));
+                string sheetName = sheet.Name;
+                string filePath = System.IO.Path.Combine(opts.OutputFolder,
+                    String.Format("{0}_{1}.dwg", opts.BaseFileName, i));
+
+                Report(_exportedCount, totalSheets, sheetName, filePath,
+                    String.Format("Đang xuất sheet {0}/{1}: {2}", _exportedCount + 1, totalSheets, sheetName));
+                PumpMessages();
+
+                ExportSingleSheet(sheet, filePath);
+                _exportedCount++;
+
+                // Báo cáo: "lập tức giải phóng không gian bộ nhớ" sau mỗi sheet để duy trì dung lượng RAM trần ổn định.
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
+                Report(_exportedCount, totalSheets, sheetName, filePath,
+                    String.Format("Đã xuất {0}/{1} sheet", _exportedCount, totalSheets));
+            }
         }
 
         // --- CurrentSheet mode (từ frmDWGExport, branch rbCurrrentSheet.Checked) ---
@@ -447,6 +486,10 @@ namespace VinTed.ExportAutoCAD
                 ExportSingleSheet(sheet, filePath);
                 _exportedCount++;
 
+                // Báo cáo: giải phóng bộ nhớ
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+
                 Report(_exportedCount, total, sheetName, filePath,
                     String.Format("Đã xuất {0}/{1} sheet", _exportedCount, total));
             }
@@ -483,6 +526,10 @@ namespace VinTed.ExportAutoCAD
 
                 ExportSingleSheet(sheet, filePath);
                 _exportedCount++;
+
+                // Báo cáo: giải phóng bộ nhớ
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
 
                 Report(_exportedCount, total, sheetName, filePath,
                     String.Format("Đã xuất {0}/{1} sheet", _exportedCount, total));

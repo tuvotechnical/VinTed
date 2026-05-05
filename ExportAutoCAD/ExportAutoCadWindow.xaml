@@ -132,13 +132,10 @@
                             <ComboBoxItem Content="Layout"/>
                         </ComboBox>
 
-                        <CheckBox x:Name="chkOptimizedIni" Content="Dùng cấu hình DWG tối ưu (nhẹ file)" IsChecked="True" Margin="0,0,0,8"/>
-
-                        <CheckBox x:Name="chkMergeFiles" Content="Gộp tất cả file DWG thành 1 bản vẽ" Margin="0,0,0,4" Checked="MergeFiles_Changed" Unchecked="MergeFiles_Changed"/>
-                        <StackPanel Orientation="Horizontal" Margin="24,0,0,12">
-                            <TextBlock Text="Khoảng cách (Gap):" VerticalAlignment="Center" Foreground="#44546A" Margin="0,0,8,0"/>
-                            <TextBox x:Name="txtGap" Width="60" Height="28" Text="100" IsEnabled="False"/>
-                            <CheckBox x:Name="chkDeleteAfterMerge" Content="Xóa file lẻ" Margin="12,0,0,0" IsEnabled="False" VerticalAlignment="Center"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                            <TextBlock Text="Khoảng cách gộp (Gap):" VerticalAlignment="Center" Foreground="#44546A" Margin="0,0,8,0"/>
+                            <TextBox x:Name="txtGap" Width="60" Height="28" Text="100"/>
+                            <CheckBox x:Name="chkDeleteAfterMerge" Content="Xóa file lẻ sau khi gộp" Margin="12,0,0,0" IsChecked="True" VerticalAlignment="Center"/>
                         </StackPanel>
 
                         <CheckBox x:Name="chkDisableScreenUpdating" Content="Tắt cập nhật màn hình (Tăng tốc độ xuất)" IsChecked="True" Margin="0,0,0,8" ToolTip="Tắt làm mới giao diện Inventor khi chuyển sheet, giúp xuất siêu tốc."/>

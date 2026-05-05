@@ -87,7 +87,6 @@ namespace VinTed.ExportAutoCAD
                     txtFrom.IsEnabled = false;
                     txtTo.IsEnabled = false;
                     cmbExportSpace.IsEnabled = false;
-                    chkOptimizedIni.IsEnabled = false;
                 }
 
                 // Thư mục lưu mặc định: WorkspacePath\CAD (giống iLogic)
@@ -205,15 +204,7 @@ namespace VinTed.ExportAutoCAD
             }
         }
 
-        private void MergeFiles_Changed(object sender, RoutedEventArgs e)
-        {
-            if (txtGap != null && chkDeleteAfterMerge != null && chkMergeFiles != null)
-            {
-                bool isMerged = chkMergeFiles.IsChecked == true;
-                txtGap.IsEnabled = isMerged && !_isRunning;
-                chkDeleteAfterMerge.IsEnabled = isMerged && !_isRunning;
-            }
-        }
+
 
         // ====================================================================
         // BROWSE FOLDER (từ frmDWGExport.btn_Browser_Click)
@@ -420,7 +411,7 @@ namespace VinTed.ExportAutoCAD
                         Inventor.DrawingDocument idwDoc = (Inventor.DrawingDocument)_invApp.ActiveDocument;
                         _engine.ExecuteDrawing(idwDoc, opts, outputFilePath);
 
-                        bool isMerged = chkMergeFiles != null && chkMergeFiles.IsChecked == true;
+                        bool isMerged = true;
                         if (isMerged)
                         {
                             double gap = 100;
@@ -518,7 +509,6 @@ namespace VinTed.ExportAutoCAD
             opts.OutputFolder = txtOutputFolder.Text;
             opts.BaseFileName = txtBaseFileName.Text;
             opts.ExportSpace = cmbExportSpace.SelectedIndex == 0 ? "Model" : "Layout";
-            opts.UseOptimizedIni = chkOptimizedIni.IsChecked == true;
             opts.DisableScreenUpdating = chkDisableScreenUpdating.IsChecked == true;
             opts.EnableSilentOperation = chkEnableSilentOperation.IsChecked == true;
 
@@ -649,7 +639,6 @@ namespace VinTed.ExportAutoCAD
             txtOutputFolder.IsEnabled = !running;
             txtBaseFileName.IsEnabled = !running;
             cmbExportSpace.IsEnabled = !running && _isDrawing;
-            chkOptimizedIni.IsEnabled = !running && _isDrawing;
             btnStop.IsEnabled = running;
 
             // Sheet mode controls

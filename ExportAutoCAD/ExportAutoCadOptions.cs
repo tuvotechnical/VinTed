@@ -26,7 +26,6 @@ namespace VinTed.ExportAutoCAD
         private int _fromSheet;
         private int _toSheet;
         private string _exportSpace;
-        private bool _useOptimizedIni;
         private bool _disableScreenUpdating;
         private bool _enableSilentOperation;
 
@@ -90,12 +89,6 @@ namespace VinTed.ExportAutoCAD
             set { _exportSpace = value; }
         }
 
-        public bool UseOptimizedIni
-        {
-            get { return _useOptimizedIni; }
-            set { _useOptimizedIni = value; }
-        }
-
         public ExportAutoCadOptions()
         {
             _outputFolder = String.Empty;
@@ -105,7 +98,6 @@ namespace VinTed.ExportAutoCAD
             _fromSheet = 1;
             _toSheet = 1;
             _exportSpace = "Model";
-            _useOptimizedIni = true;
         }
     }
 }

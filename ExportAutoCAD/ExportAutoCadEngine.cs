@@ -181,7 +181,7 @@ namespace VinTed.ExportAutoCAD
                 "\\Design Data\\DWG-DXF\\FlatPattern.xml\r\n" +
                 "CREATE LAYER GROUP=No\r\n" +
                 "PARTS ONLY=No\r\n" +
-                "REPLACE SPLINE=No\r\n" +
+                "REPLACE SPLINE=Yes\r\n" +
                 "CHORD TOLERANCE=0.010000\r\n" +
                 "[EXPORT PROPERTIES]\r\n" +
                 "SELECTED PROPERTIES=\r\n" +
@@ -281,9 +281,11 @@ namespace VinTed.ExportAutoCAD
                 _options.set_Value("Export_Acad_IniFile", iniPath);
             }
 
+            // Purge unused components trước khi xuất để giảm khối lượng dữ liệu
+            PurgeUnusedComponents(idwDoc);
+
             // --- Transaction wrapper (từ frmDWGExport.PublishDWG) ---
             Transaction transaction = null;
-            bool originalScreenUpdating = true;
             bool originalSilentOperation = false;
             bool originalBackgroundUpdates = false;
             bool originalDeferUpdates = false;
@@ -722,6 +724,49 @@ namespace VinTed.ExportAutoCAD
             }
         }
         // ====================================================================
+        // OPTIMIZATION: PURGE UNUSED COMPONENTS
+        // ====================================================================
+
+        /// <summary>
+        /// Xóa các SketchedSymbolDefinition và AutoCADBlockDefinition không được tham chiếu.
+        /// Giảm kích thước dữ liệu trước khi Translator phải dịch sang DWG.
+        /// </summary>
+        private void PurgeUnusedComponents(DrawingDocument drawDoc)
+        {
+            try
+            {
+                // Xóa SketchedSymbolDefinitions không sử dụng
+                List<SketchedSymbolDefinition> unusedSketchDefs = new List<SketchedSymbolDefinition>();
+                foreach (SketchedSymbolDefinition def in drawDoc.SketchedSymbolDefinitions)
+                {
+                    if (!def.IsReferenced)
+                    {
+                        unusedSketchDefs.Add(def);
+                    }
+                }
+                foreach (SketchedSymbolDefinition def in unusedSketchDefs)
+                {
+                    try { def.Delete(); } catch { }
+                }
+
+                // Xóa AutoCADBlockDefinitions không sử dụng
+                List<AutoCADBlockDefinition> unusedBlockDefs = new List<AutoCADBlockDefinition>();
+                foreach (AutoCADBlockDefinition def in drawDoc.AutoCADBlockDefinitions)
+                {
+                    if (!def.IsReferenced)
+                    {
+                        unusedBlockDefs.Add(def);
+                    }
+                }
+                foreach (AutoCADBlockDefinition def in unusedBlockDefs)
+                {
+                    try { def.Delete(); } catch { }
+                }
+            }
+            catch { }
+        }
+
+        // ====================================================================
         // GỘP FILE DWG BẰNG AUTOCAD CORE CONSOLE
         // ====================================================================
 
@@ -770,10 +815,10 @@ namespace VinTed.ExportAutoCAD
             };
             System.IO.File.WriteAllLines(argsFile, lines);
 
-            // Tạo file script cho AutoCAD
+            // Tạo file script cho AutoCAD: NetLoad plugin -> Gộp file -> Purge bản vẽ cuối -> Lưu
             string scrFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "VinTed_Merge.scr");
             string logFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "VinTed_Merge_Log.txt");
-            string scrContent = String.Format("SECURELOAD\r\n0\r\nNETLOAD \"{0}\"\r\nVINTED_MERGE\r\n", pluginPath.Replace("\\", "\\\\"));
+            string scrContent = String.Format("SECURELOAD\r\n0\r\nNETLOAD \"{0}\"\r\nVINTED_MERGE\r\n-PURGE\r\nALL\r\n*\r\nN\r\nQSAVE\r\n", pluginPath.Replace("\\", "\\\\"));
             System.IO.File.WriteAllText(scrFile, scrContent);
 
             // Chạy accoreconsole
@@ -782,8 +827,9 @@ namespace VinTed.ExportAutoCAD
 
             System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo();
             psi.FileName = autocadPath;
-            // Dùng template trống mặc định của acad
-            psi.Arguments = String.Format("/s \"{0}\" /l \"{1}\"", scrFile, logFile);
+            // Arguments chuẩn cho accoreconsole: /s cho script. /product ACAD để đảm bảo load đúng profile.
+            // Bỏ /l vì nó dành cho language, không phải log.
+            psi.Arguments = String.Format("/s \"{0}\" /product ACAD", scrFile);
             psi.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
             psi.CreateNoWindow = true;
             psi.UseShellExecute = false;

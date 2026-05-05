@@ -67,9 +67,10 @@ namespace VinTed.AutoCAD
                 string str = string.Empty;
                 string[] files = new string[0];
 
-                using (Transaction transaction = doc.TransactionManager.StartTransaction())
+                using (Database targetDb = new Database(true, false))
                 {
-                    BlockTable blockTable = (BlockTable)transaction.GetObject(doc.Database.BlockTableId, OpenMode.ForRead);
+                    targetDb.ReadDwgFile(fileToSave, FileShare.ReadWrite, false, null);
+                    
                     this.processedFiles = new HashSet<string>();
                     bool firstFile = true;
                     
@@ -81,7 +82,6 @@ namespace VinTed.AutoCAD
 
                     if (files.Length == 0)
                     {
-                        // Fallback to legacy Sheet_*.dwg if renamed
                         files = Directory.GetFiles(pathContainingDWG, "Sheet_*.dwg")
                                          .OrderBy(f => SortedToGetFileNumber(f))
                                          .ToArray();
@@ -89,33 +89,30 @@ namespace VinTed.AutoCAD
 
                     if (files.Length == 0)
                     {
-                        transaction.Commit();
                         ed.WriteMessage("\nError: Không tìm thấy các file " + searchPattern);
                         return;
                     }
 
-                    if (files.Length > 1)
+                    foreach (string text in files)
                     {
-                        foreach (string text in files)
+                        if (text != fileToSave && !this.processedFiles.Contains(text))
                         {
-                            if (text != fileToSave && !this.processedFiles.Contains(text))
+                            str = text;
+                            if (!dwgFileProcessing(text, targetDb, firstFile))
                             {
-                                str = text;
-                                if (!dwgFileProcessing(text, fileToSave, firstFile))
-                                {
-                                    ed.WriteMessage("\nError: Dừng xử lý.");
-                                    return;
-                                }
-                                this.processedFiles.Add(text);
-                                firstFile = false;
+                                ed.WriteMessage("\nError: Dừng xử lý.");
+                                return;
                             }
+                            this.processedFiles.Add(text);
+                            firstFile = false;
                         }
-                        transaction.Commit();
-                        
-                        if (deleteFileAfterMerging)
-                        {
-                            DeleteDWGfile(files);
-                        }
+                    }
+                    
+                    targetDb.SaveAs(fileToSave, DwgVersion.Current);
+                    
+                    if (deleteFileAfterMerging)
+                    {
+                        DeleteDWGfile(files);
                     }
                 }
 
@@ -149,12 +146,13 @@ namespace VinTed.AutoCAD
                     database.Auprec = 0;
                     database.SaveAs(fileToSave, DwgVersion.Current);
                 }
+                return true;
             }
             catch (System.Exception ex)
             {
                 Application.DocumentManager.MdiActiveDocument.Editor.WriteMessage("\nLỗi khởi tạo style: " + ex.Message);
+                return false;
             }
-            return false;
         }
 
         private void DeleteDWGfile(string[] files)
@@ -202,71 +200,66 @@ namespace VinTed.AutoCAD
             return false;
         }
 
-        private bool dwgFileProcessing(string sourceFilename, string targetFilename, bool firstFile)
+        private bool dwgFileProcessing(string sourceFilename, Database targetDb, bool firstFile)
         {
-            using (Database database = new Database(true, false))
+            int num = 0;
+            bool flag = false;
+            using (Database database2 = new Database(true, false))
             {
-                database.ReadDwgFile(targetFilename, FileShare.ReadWrite, false, null);
-                int num = 0;
-                bool flag = false;
-                using (Database database2 = new Database(true, false))
+                database2.ReadDwgFile(sourceFilename, FileShare.ReadWrite, false, null);
+                if (CheckObjectExistsInDatabase(database2, "MODEL"))
                 {
-                    database2.ReadDwgFile(sourceFilename, FileShare.ReadWrite, false, null);
-                    if (CheckObjectExistsInDatabase(database2, "MODEL"))
+                    SpecifyModel = "MODEL";
+                    FindBlockToGetSize(database2, out num, sourceFilename);
+                    if (this.maxPoint > 0.0)
                     {
-                        SpecifyModel = "MODEL";
-                        FindBlockToGetSize(database2, out num, sourceFilename);
-                        if (this.maxPoint > 0.0)
+                        if (num <= 0) num = 1;
+                        ProcessingObjectsInModelSpace_SourceDatabase(database2, num, out flag);
+                        Point3d point3d;
+                        if (firstFile)
                         {
-                            if (num <= 0) num = 1;
-                            ProcessingObjectsInModelSpace_SourceDatabase(database2, num, out flag);
-                            Point3d point3d;
-                            if (firstFile)
-                            {
-                                double saveTargetInsertPoint = this.maxPoint - this.minPoint;
-                                point3d = new Point3d(-this.minPoint, -this.minPoint, 0.0);
-                                this.SaveTargetInsertPoint = saveTargetInsertPoint;
-                            }
-                            else
-                            {
-                                double num2 = this.SaveTargetInsertPoint + this.Gap - this.minPoint;
-                                point3d = new Point3d(num2, -this.minPoint, 0.0);
-                                this.SaveTargetInsertPoint = num2 + this.maxPoint;
-                            }
-                            Matrix3d matrix3d = Matrix3d.Displacement(point3d - Point3d.Origin);
-                            database.Insert(matrix3d, database2, true);
+                            double saveTargetInsertPoint = this.maxPoint - this.minPoint;
+                            point3d = new Point3d(-this.minPoint, -this.minPoint, 0.0);
+                            this.SaveTargetInsertPoint = saveTargetInsertPoint;
                         }
-                        if (flag)
+                        else
                         {
-                            CreateNewDimStyle(database, num);
+                            double num2 = this.SaveTargetInsertPoint + this.Gap - this.minPoint;
+                            point3d = new Point3d(num2, -this.minPoint, 0.0);
+                            this.SaveTargetInsertPoint = num2 + this.maxPoint;
                         }
-                        string[] layerName = new string[] { "Hidden 1", "Hidden 2" };
-                        SetLayerLinetype(database, layerName, "HIDDEN");
-                        if ((int)database.Ltscale < num)
+                        Matrix3d matrix3d = Matrix3d.Displacement(point3d - Point3d.Origin);
+                        targetDb.Insert(matrix3d, database2, true);
+                    }
+                    if (flag)
+                    {
+                        CreateNewDimStyle(targetDb, num);
+                    }
+                    string[] layerName = new string[] { "Hidden 1", "Hidden 2" };
+                    SetLayerLinetype(targetDb, layerName, "HIDDEN");
+                    if ((int)targetDb.Ltscale < num)
+                    {
+                        targetDb.Ltscale = (double)num;
+                    }
+                }
+                else if (CheckObjectExistsInDatabase(database2, "LAYOUT"))
+                {
+                    SpecifyModel = "LAYOUT";
+                    string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(sourceFilename);
+                    if (fileNameWithoutExtension.Contains("_"))
+                    {
+                        int num3 = fileNameWithoutExtension.LastIndexOf('_');
+                        if (num3 != -1)
                         {
-                            database.Ltscale = (double)num;
+                            string text = fileNameWithoutExtension.Substring(num3 + 1);
+                            string sourceLayoutName = text + "_" + text;
+                            ProcessingObjectsInPaperSpace_SourceDatabase(database2, targetDb, sourceLayoutName);
                         }
                     }
-                    else if (CheckObjectExistsInDatabase(database2, "LAYOUT"))
-                    {
-                        SpecifyModel = "LAYOUT";
-                        string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(sourceFilename);
-                        if (fileNameWithoutExtension.Contains("_"))
-                        {
-                            int num3 = fileNameWithoutExtension.LastIndexOf('_');
-                            if (num3 != -1)
-                            {
-                                string text = fileNameWithoutExtension.Substring(num3 + 1);
-                                string sourceLayoutName = text + "_" + text;
-                                ProcessingObjectsInPaperSpace_SourceDatabase(database2, database, sourceLayoutName);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        return true; // Ignore empty file
-                    }
-                    database.SaveAs(fileToSave, DwgVersion.Current);
+                }
+                else
+                {
+                    return true; // Ignore empty file
                 }
             }
             return true;

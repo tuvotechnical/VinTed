@@ -83,14 +83,18 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
   * **Gộp file tự động:** Mặc định luôn gộp tất cả file DWG rời rạc thành một file bản vẽ tổng thể duy nhất sử dụng script AutoCAD Core Console (`VinTed_Merge.scr`).
   * **Khoảng cách (Gap):** Dễ dàng điều chỉnh khoảng cách dàn trải các sheet trong Model Space.
   * **Xóa rác tự động:** Luôn hỗ trợ tùy chọn dọn dẹp các file sheet lẻ sau khi quá trình gộp đã hoàn tất.
-* **INI File tối ưu:** Tự động cấu hình `ExportToDWG.ini` siêu tối ưu cho tốc độ và dung lượng:
-  * Sử dụng bảng màu ACI (`USE ACI FOR ENTITIES AND LAYERS=Yes`) thay thế TrueColor giúp file cực nhẹ.
-  * Tắt các process dư thừa (`SHOW DESTINATION PAGE=No`, `ENABLE POSTPROCESS=No`).
+* **Tối ưu hiệu suất xuất DWG:**
+  * **INI cực đoan:** AutoCAD 2004 (dung lượng nhỏ nhất), `REPLACE SPLINE=Yes` (thay spline phức tạp bằng polyline), `CHORD TOLERANCE=0.01` (giảm tải hình học đường cong), `USE ACI=Yes` (bảng màu ACI siêu nhẹ).
+  * **Purge trước xuất:** Tự động xóa `SketchedSymbolDefinition` và `AutoCADBlockDefinition` không được tham chiếu, giảm khối lượng dữ liệu Translator phải dịch.
+  * **Purge sau gộp:** Script AutoCAD tự động chạy `-PURGE ALL` trên bản vẽ gộp cuối cùng để dọn dẹp block/layer/style không dùng.
+  * **Đóng băng môi trường:** Tắt `BackgroundUpdates`, bật `DeferUpdates`, cô lập Vault Addin — tránh mọi xử lý nền gây trễ.
+  * **GC sau mỗi sheet:** `GC.Collect()` + `GC.WaitForPendingFinalizers()` giải phóng COM objects, giữ ổn định bộ nhớ cho bản vẽ nhiều trang.
+  * **Tự động dò AutoCAD:** Tự quét `C:\Program Files\Autodesk\AutoCAD *` để tìm phiên bản AutoCAD mới nhất, không hardcode đường dẫn.
 * **Part/Assembly:** Tự động xuất Solid, Surface, Sketch.
 * **Kiểm tra Raster View:** Quét toàn bộ DrawingView, cảnh báo nếu có view Raster trước khi export.
 * **DWG Translator Options:** Nút Options mở dialog cấu hình gốc của Inventor DWG Translator.
 * **STOP an toàn:** Hỗ trợ dừng khẩn cấp giữa các sheet trong quá trình xuất.
-* **Giao diện:** WPF ModernWpf **Light Theme** — gọn gàng, loại bỏ các checkbox cấu hình phức tạp không cần thiết, tối ưu hóa 1-click export.
+* **Giao diện:** WPF ModernWpf **Light Theme** — ShowDialog gắn liền Inventor, không TopMost, 1-click export.
 * **Ribbon:** Tab **VinTed** → Panel **Drawing Tools**.
 
 ### D. Insert Plus+ (Copy và Lắp ráp tự động)

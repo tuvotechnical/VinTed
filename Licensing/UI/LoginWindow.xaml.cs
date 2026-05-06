@@ -14,6 +14,7 @@ namespace VinTed.Licensing.UI
 
         // ===== Win32 Keyboard Hook =====
         private const int WH_KEYBOARD = 2;
+        private const int HC_ACTION = 0;
         private const int VK_SPACE = 0x20;
         private const int VK_RETURN = 0x0D;
         private const int VK_V = 0x56;
@@ -71,10 +72,11 @@ namespace VinTed.Licensing.UI
 
         private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0 && IsActive)
+            if (nCode == HC_ACTION && IsActive)
             {
                 int vkCode = wParam.ToInt32();
                 bool isKeyDown = ((long)lParam & 0x80000000L) == 0;
+                bool wasKeyDown = ((long)lParam & 0x40000000L) != 0;
                 bool isCtrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
 
                 if (isKeyDown)
@@ -87,8 +89,11 @@ namespace VinTed.Licensing.UI
                     {
                         if (isCtrl && vkCode == VK_V) // Ctrl+V
                         {
-                            if (tb != null) tb.Paste();
-                            if (pb != null) pb.Paste();
+                            if (!wasKeyDown)
+                            {
+                                if (tb != null) tb.Paste();
+                                if (pb != null) pb.Paste();
+                            }
                             return (IntPtr)1;
                         }
                         else if (isCtrl && vkCode == VK_C) // Ctrl+C

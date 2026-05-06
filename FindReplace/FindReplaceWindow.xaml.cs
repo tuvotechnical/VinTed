@@ -28,6 +28,7 @@ namespace VinTed.FindReplace
 
         // ===== Win32 Keyboard Hook (chống Inventor nuốt Space) =====
         private const int WH_KEYBOARD = 2;
+        private const int HC_ACTION = 0;
         private const int VK_SPACE = 0x20;
         private const int VK_RETURN = 0x0D;
 
@@ -81,12 +82,13 @@ namespace VinTed.FindReplace
         /// </summary>
         private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
-            if (nCode >= 0 && IsActive)
+            if (nCode == HC_ACTION && IsActive)
             {
                 int vkCode = wParam.ToInt32();
 
                 // Bit 31 của lParam: 0 = key down, 1 = key up
                 bool isKeyDown = ((long)lParam & 0x80000000L) == 0;
+                bool wasKeyDown = ((long)lParam & 0x40000000L) != 0;
                 bool isCtrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
 
                 if (isKeyDown)
@@ -98,7 +100,7 @@ namespace VinTed.FindReplace
                     {
                         if (isCtrl && vkCode == 0x56) // Ctrl+V
                         {
-                            tb.Paste();
+                            if (!wasKeyDown) tb.Paste();
                             return (IntPtr)1;
                         }
                         else if (isCtrl && vkCode == 0x43) // Ctrl+C

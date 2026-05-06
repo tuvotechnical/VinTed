@@ -1,6 +1,8 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace VinTed.Licensing.UI
@@ -9,6 +11,33 @@ namespace VinTed.Licensing.UI
     {
         private bool _isSignUpMode;
         private System.Windows.Threading.Dispatcher _dispatcher;
+
+        // ===== Win32 Keyboard Hook =====
+        private const int WH_KEYBOARD = 2;
+        private const int VK_SPACE = 0x20;
+        private const int VK_RETURN = 0x0D;
+        private const int VK_V = 0x56;
+        private const int VK_C = 0x43;
+        private const int VK_X = 0x58;
+        private const int VK_A = 0x41;
+        private const int VK_Z = 0x5A;
+
+        private delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        private static extern IntPtr SetWindowsHookEx(int idHook, HookProc lpfn, IntPtr hMod, uint dwThreadId);
+
+        [DllImport("user32.dll")]
+        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+        [DllImport("kernel32.dll")]
+        private static extern uint GetCurrentThreadId();
+
+        private IntPtr _hookId = IntPtr.Zero;
+        private HookProc _hookProcDelegate;
 
         /// <summary>
         /// Event khi đăng nhập thành công — để caller biết cập nhật license.
@@ -20,6 +49,99 @@ namespace VinTed.Licensing.UI
             InitializeComponent();
             _isSignUpMode = false;
             _dispatcher = System.Windows.Threading.Dispatcher.CurrentDispatcher;
+            
+            Loaded += OnWindowLoaded;
+            Closed += OnWindowClosed;
+        }
+
+        private void OnWindowLoaded(object sender, RoutedEventArgs e)
+        {
+            _hookProcDelegate = new HookProc(KeyboardHookCallback);
+            _hookId = SetWindowsHookEx(WH_KEYBOARD, _hookProcDelegate, IntPtr.Zero, GetCurrentThreadId());
+        }
+
+        private void OnWindowClosed(object sender, EventArgs e)
+        {
+            if (_hookId != IntPtr.Zero)
+            {
+                UnhookWindowsHookEx(_hookId);
+                _hookId = IntPtr.Zero;
+            }
+        }
+
+        private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
+        {
+            if (nCode >= 0 && IsActive)
+            {
+                int vkCode = wParam.ToInt32();
+                bool isKeyDown = ((long)lParam & 0x80000000L) == 0;
+                bool isCtrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+
+                if (isKeyDown)
+                {
+                    IInputElement focused = Keyboard.FocusedElement;
+                    TextBox tb = focused as TextBox;
+                    PasswordBox pb = focused as PasswordBox;
+
+                    if (tb != null || pb != null)
+                    {
+                        if (isCtrl && vkCode == VK_V) // Ctrl+V
+                        {
+                            if (tb != null) tb.Paste();
+                            if (pb != null) pb.Paste();
+                            return (IntPtr)1;
+                        }
+                        else if (isCtrl && vkCode == VK_C) // Ctrl+C
+                        {
+                            if (tb != null) tb.Copy();
+                            return (IntPtr)1;
+                        }
+                        else if (isCtrl && vkCode == VK_X) // Ctrl+X
+                        {
+                            if (tb != null) tb.Cut();
+                            return (IntPtr)1;
+                        }
+                        else if (isCtrl && vkCode == VK_A) // Ctrl+A
+                        {
+                            if (tb != null) tb.SelectAll();
+                            if (pb != null) pb.SelectAll();
+                            return (IntPtr)1;
+                        }
+                        else if (isCtrl && vkCode == VK_Z) // Ctrl+Z
+                        {
+                            if (tb != null) tb.Undo();
+                            return (IntPtr)1;
+                        }
+                        else if (vkCode == VK_SPACE && !isCtrl)
+                        {
+                            if (tb != null)
+                            {
+                                int caret = tb.CaretIndex;
+                                int selLen = tb.SelectionLength;
+                                int selStart = tb.SelectionStart;
+                                if (selLen > 0)
+                                {
+                                    tb.Text = tb.Text.Remove(selStart, selLen);
+                                    caret = selStart;
+                                }
+                                tb.Text = tb.Text.Insert(caret, " ");
+                                tb.CaretIndex = caret + 1;
+                            }
+                            else if (pb != null)
+                            {
+                                pb.Password += " ";
+                            }
+                            return (IntPtr)1;
+                        }
+                        else if (vkCode == VK_RETURN && !isCtrl)
+                        {
+                            BtnSubmit_Click(null, null);
+                            return (IntPtr)1;
+                        }
+                    }
+                }
+            }
+            return CallNextHookEx(_hookId, nCode, wParam, lParam);
         }
 
         private void TxtPassword_KeyDown(object sender, KeyEventArgs e)

@@ -52,6 +52,7 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
   * **An toàn dữ liệu:** Tích hợp `Transaction` cho mỗi lần thay thế, hỗ trợ `Undo/Redo` (Ctrl+Z).
   * Tự động zoom đến vị trí Text tìm được (`AppZoomSelectCmd`).
   * 3 chế độ: **Find Next** (duyệt tuần tự, quay vòng), **Replace** (thay thế mục hiện tại), **Replace All** (thay thế toàn bộ).
+  * **Hỗ trợ đầy đủ phím tắt hệ thống** (Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A, Ctrl+Z) trong các ô nhập liệu bằng Win32 Keyboard Hook để tránh xung đột với tiến trình nền của Inventor.
 
 ### B. Copy Hatch Pattern (Sao chép mặt cắt)
 * **Chức năng:** Sao chép pattern mặt cắt (hatch) từ chi tiết mẫu sang nhiều chi tiết đích trong Section View.

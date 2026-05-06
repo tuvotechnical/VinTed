@@ -77,7 +77,7 @@ namespace VinTed.FindReplace
         /// <summary>
         /// Low-level keyboard hook callback.
         /// Chạy TRƯỚC Inventor TranslateAccelerator.
-        /// Nếu Space được nhấn khi TextBox đang có focus → tự chèn space, suppress message.
+        /// Bắt các phím tắt (Ctrl+C, Ctrl+V, Space, Return) để không bị Inventor nuốt.
         /// </summary>
         private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
         {
@@ -87,35 +87,59 @@ namespace VinTed.FindReplace
 
                 // Bit 31 của lParam: 0 = key down, 1 = key up
                 bool isKeyDown = ((long)lParam & 0x80000000L) == 0;
+                bool isCtrl = (Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control;
 
-                if (isKeyDown && vkCode == VK_SPACE)
+                if (isKeyDown)
                 {
                     IInputElement focused = Keyboard.FocusedElement;
                     TextBox tb = focused as TextBox;
+
                     if (tb != null)
                     {
-                        int caret = tb.CaretIndex;
-                        int selLen = tb.SelectionLength;
-                        int selStart = tb.SelectionStart;
-                        if (selLen > 0)
+                        if (isCtrl && vkCode == 0x56) // Ctrl+V
                         {
-                            tb.Text = tb.Text.Remove(selStart, selLen);
-                            caret = selStart;
+                            tb.Paste();
+                            return (IntPtr)1;
                         }
-                        tb.Text = tb.Text.Insert(caret, " ");
-                        tb.CaretIndex = caret + 1;
-                        // Return 1 = suppress message, Inventor không nhận được
-                        return (IntPtr)1;
-                    }
-                }
-                else if (isKeyDown && vkCode == VK_RETURN)
-                {
-                    IInputElement focused = Keyboard.FocusedElement;
-                    TextBox tb = focused as TextBox;
-                    if (tb != null)
-                    {
-                        BtnFind_Click(tb, new RoutedEventArgs());
-                        return (IntPtr)1;
+                        else if (isCtrl && vkCode == 0x43) // Ctrl+C
+                        {
+                            tb.Copy();
+                            return (IntPtr)1;
+                        }
+                        else if (isCtrl && vkCode == 0x58) // Ctrl+X
+                        {
+                            tb.Cut();
+                            return (IntPtr)1;
+                        }
+                        else if (isCtrl && vkCode == 0x41) // Ctrl+A
+                        {
+                            tb.SelectAll();
+                            return (IntPtr)1;
+                        }
+                        else if (isCtrl && vkCode == 0x5A) // Ctrl+Z
+                        {
+                            tb.Undo();
+                            return (IntPtr)1;
+                        }
+                        else if (vkCode == VK_SPACE && !isCtrl)
+                        {
+                            int caret = tb.CaretIndex;
+                            int selLen = tb.SelectionLength;
+                            int selStart = tb.SelectionStart;
+                            if (selLen > 0)
+                            {
+                                tb.Text = tb.Text.Remove(selStart, selLen);
+                                caret = selStart;
+                            }
+                            tb.Text = tb.Text.Insert(caret, " ");
+                            tb.CaretIndex = caret + 1;
+                            return (IntPtr)1;
+                        }
+                        else if (vkCode == VK_RETURN && !isCtrl)
+                        {
+                            BtnFind_Click(tb, new RoutedEventArgs());
+                            return (IntPtr)1;
+                        }
                     }
                 }
             }

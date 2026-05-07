@@ -780,55 +780,37 @@ namespace VinTed.ExportAutoCAD
                 throw new InvalidOperationException("Không tìm thấy VinTed.AutoCAD.dll để gộp file.");
             }
 
-            string autocadPath = String.Empty;
-            string autodeskDir = @"C:\Program Files\Autodesk";
-            if (System.IO.Directory.Exists(autodeskDir))
-            {
-                // Sắp xếp giảm dần để ưu tiên AutoCAD phiên bản mới nhất
-                string[] acadDirs = System.IO.Directory.GetDirectories(autodeskDir, "AutoCAD *");
-                Array.Sort(acadDirs);
-                Array.Reverse(acadDirs);
-                foreach (string dir in acadDirs)
-                {
-                    string path = System.IO.Path.Combine(dir, "accoreconsole.exe");
-                    if (System.IO.File.Exists(path))
-                    {
-                        autocadPath = path;
-                        break;
-                    }
-                }
-            }
-
+            string autocadPath = FindAutoCadCoreConsole();
             if (String.IsNullOrEmpty(autocadPath) || !System.IO.File.Exists(autocadPath))
             {
                 throw new InvalidOperationException("Không tìm thấy AutoCAD Core Console (accoreconsole.exe) trên máy tính. Hãy đảm bảo đã cài đặt AutoCAD.");
             }
 
-            // Ghi cấu hình ra file args
-            string argsFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "VinTed_MergeArgs.txt");
-            string[] lines = new string[]
+            string[] sourceFiles = GetMergeSourceFiles(outputFolder, outputFile);
+            if (sourceFiles.Length == 0)
             {
-                outputFolder,
-                outputFile,
-                gap.ToString(),
-                deleteFiles.ToString()
-            };
-            System.IO.File.WriteAllLines(argsFile, lines);
+                throw new InvalidOperationException("Không tìm thấy file sheet DWG để gộp.");
+            }
 
-            // Tạo file script cho AutoCAD: NetLoad plugin -> Gộp file -> Lưu
+            string argsFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "VinTed_MergeArgs.txt");
+            List<string> lines = new List<string>();
+            lines.Add(outputFolder);
+            lines.Add(outputFile);
+            lines.Add(gap.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            lines.Add(deleteFiles.ToString());
+            lines.AddRange(sourceFiles);
+            System.IO.File.WriteAllLines(argsFile, lines.ToArray());
+
             string scrFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "VinTed_Merge.scr");
-            string logFile = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "VinTed_Merge_Log.txt");
-            string scrContent = String.Format("SECURELOAD\r\n0\r\nNETLOAD \"{0}\"\r\nVINTED_MERGE\r\nQSAVE\r\n", pluginPath.Replace("\\", "\\\\"));
+            string scrContent = String.Format("SECURELOAD\r\n0\r\nNETLOAD \"{0}\"\r\nVINTED_MERGE\r\n", pluginPath.Replace("\\", "\\\\"));
             System.IO.File.WriteAllText(scrFile, scrContent);
 
-            // Chạy accoreconsole
-            Report(0, 1, String.Empty, String.Empty, "Đang gọi AutoCAD gộp file (chạy ngầm)...");
+            Report(0, 1, String.Empty, String.Empty,
+                String.Format("Đang gộp {0} file DWG bằng AutoCAD Core Console...", sourceFiles.Length));
             PumpMessages();
 
             System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo();
             psi.FileName = autocadPath;
-            // Arguments chuẩn cho accoreconsole: /s cho script. /product ACAD để đảm bảo load đúng profile.
-            // Bỏ /l vì nó dành cho language, không phải log.
             psi.Arguments = String.Format("/s \"{0}\" /product ACAD", scrFile);
             psi.WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden;
             psi.CreateNoWindow = true;
@@ -836,11 +818,86 @@ namespace VinTed.ExportAutoCAD
 
             using (System.Diagnostics.Process p = System.Diagnostics.Process.Start(psi))
             {
-                p.WaitForExit(60000); // Đợi tối đa 60 giây
+                if (p == null)
+                {
+                    throw new InvalidOperationException("Không thể khởi động AutoCAD Core Console.");
+                }
+
+                if (!p.WaitForExit(120000))
+                {
+                    try { p.Kill(); } catch { }
+                    throw new TimeoutException("AutoCAD Core Console gộp DWG quá thời gian 120 giây.");
+                }
+
+                if (p.ExitCode != 0)
+                {
+                    throw new InvalidOperationException("AutoCAD Core Console kết thúc với mã lỗi: " + p.ExitCode);
+                }
             }
 
             try { System.IO.File.Delete(argsFile); } catch { }
             try { System.IO.File.Delete(scrFile); } catch { }
+
+            Report(1, 1, String.Empty, outputFile, "Hoàn tất gộp DWG.");
+        }
+
+        private string FindAutoCadCoreConsole()
+        {
+            string autocadPath = String.Empty;
+            string autodeskDir = @"C:\Program Files\Autodesk";
+            if (!System.IO.Directory.Exists(autodeskDir))
+            {
+                return autocadPath;
+            }
+
+            string[] acadDirs = System.IO.Directory.GetDirectories(autodeskDir, "AutoCAD *");
+            Array.Sort(acadDirs);
+            Array.Reverse(acadDirs);
+            foreach (string dir in acadDirs)
+            {
+                string path = System.IO.Path.Combine(dir, "accoreconsole.exe");
+                if (System.IO.File.Exists(path))
+                {
+                    autocadPath = path;
+                    break;
+                }
+            }
+            return autocadPath;
+        }
+
+        private string[] GetMergeSourceFiles(string outputFolder, string outputFile)
+        {
+            if (!System.IO.Directory.Exists(outputFolder))
+            {
+                return new string[0];
+            }
+
+            string baseName = System.IO.Path.GetFileNameWithoutExtension(outputFile);
+            string[] files = System.IO.Directory.GetFiles(outputFolder, baseName + "_*.dwg");
+            Array.Sort(files, CompareDwgSheetFileNames);
+            return files;
+        }
+
+        private static int CompareDwgSheetFileNames(string left, string right)
+        {
+            int leftNumber = GetDwgSheetNumber(left);
+            int rightNumber = GetDwgSheetNumber(right);
+            return leftNumber.CompareTo(rightNumber);
+        }
+
+        private static int GetDwgSheetNumber(string filePath)
+        {
+            string name = System.IO.Path.GetFileNameWithoutExtension(filePath);
+            int index = name.LastIndexOf('_');
+            if (index >= 0 && index < name.Length - 1)
+            {
+                int number;
+                if (Int32.TryParse(name.Substring(index + 1), out number))
+                {
+                    return number;
+                }
+            }
+            return 0;
         }
     }
 }

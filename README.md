@@ -81,7 +81,8 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
   * **Tùy chọn (Custom):** Nhập danh sách sheet cách bằng dấu phẩy (VD: 1,3,5). Xuất từng sheet một.
   * **Từ — Đến (From-To):** Nhập phạm vi sheet (VD: 2 đến 6). Xuất từng sheet trong phạm vi.
 * **Tối ưu tự động hóa:**
-  * **Gộp file tự động:** Mặc định luôn gộp tất cả file DWG rời rạc thành một file bản vẽ tổng thể duy nhất sử dụng script AutoCAD Core Console (`VinTed_Merge.scr`).
+  * **Gộp file tự động:** Mặc định luôn gộp tất cả file DWG rời rạc thành một file bản vẽ tổng thể duy nhất sử dụng AutoCAD Core Console (`VinTed_Merge.scr`). Engine truyền danh sách file sheet rõ ràng vào `VinTed_MergeArgs.txt` để plugin xử lý theo batch trong một phiên console duy nhất, tránh scan thư mục thừa và loại bỏ mô hình khởi tạo lặp.
+  * **Merge in-memory:** Plugin AutoCAD tạo target `Database` trực tiếp trong bộ nhớ, cấu hình style/units và insert toàn bộ DWG nguồn rồi chỉ `SaveAs` một lần ở cuối. Cách này giảm đáng kể I/O so với tạo file rỗng → đọc lại → save nhiều lần.
   * **Khoảng cách (Gap):** Dễ dàng điều chỉnh khoảng cách dàn trải các sheet trong Model Space.
   * **Xóa rác tự động:** Luôn hỗ trợ tùy chọn dọn dẹp các file sheet lẻ sau khi quá trình gộp đã hoàn tất.
 * **Tối ưu hiệu suất xuất DWG:**
@@ -109,7 +110,23 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
 * **Giao diện:** WPF ModernWpf **Light Theme** — trực quan, thiết kế form nhập liệu chuyên nghiệp. UI tự động ẩn khi thao tác trên bản vẽ để không che khuất màn hình.
 * **Ribbon:** Tab **VinTed** → Panel **Assembly Tools**.
 
-### D. Auto-Update Checker (Tự động kiểm tra cập nhật)
+### E. Assembly Browser (Duyệt và chọn linh kiện)
+* **Chức năng:** Hiển thị danh sách tất cả ComponentOccurrence trong Assembly với đồng bộ hai chiều giữa UI và 3D model.
+* **Đồng bộ hai chiều:**
+  * **UI → Model:** Click chọn row trong DataGrid → tự động highlight part tương ứng trong 3D model.
+  * **Model → UI:** Click chọn part trong 3D model → tự động highlight và scroll đến row tương ứng trong DataGrid.
+* **Thông tin hiển thị:** Name, Material, Quantity, Mass (kg), Full Path (cho sub-assembly).
+* **Sub-Occurrence Mapping:** Khi chọn part sâu trong sub-assembly, hệ thống tự động map về parent occurrence hiển thị trong grid.
+* **Anti-Loop Protection:** Sử dụng thread-safe flag `_isSyncingSelection` để tránh đệ quy vô hạn giữa UI và Model events.
+* **Kỹ thuật cốt lõi:**
+  * Hook `UserInputEvents.OnSelect` để lắng nghe selection từ 3D graphics window.
+  * Sử dụng reflection late binding (`InvokeMember`) để navigate COM object hierarchy (Edge → Face → ComponentOccurrence).
+  * Store `ComponentOccurrence` reference trong `Tag` property của DataGrid row để mapping nhanh.
+  * Modeless Window (`.Show()`) cho phép tương tác đồng thời với 3D model.
+* **Giao diện:** WPF ModernWpf **Light Theme** — DataGrid hiện đại với hover effects, header gradient xanh, nút Refresh/Close.
+* **Ribbon:** Tab **VinTed** → Panel **Assembly Tools**.
+
+### F. Auto-Update Checker (Tự động kiểm tra cập nhật)
 * **Chức năng:** Tự động kiểm tra cập nhật trên nền (khi khởi động Inventor) và cung cấp nút kiểm tra thủ công ở tất cả các môi trường làm việc.
 * **Cơ chế hoạt động:**
   * Background thread tự động check version mới nhất trên GitHub Releases thông qua REST API (`/repos/tuvotechnical/VinTed/releases/latest`).
@@ -120,7 +137,7 @@ powershell -c "irm https://raw.githubusercontent.com/tuvotechnical/VinTed/main/i
   * Nếu nhấn **"Tải về ngay"**, hệ thống sẽ tự động gọi PowerShell chạy lệnh tải script `install.ps1` trực tiếp từ GitHub để tự động đóng Inventor, download bộ cài đặt mới nhất, giải nén và tự động update VinTed hoàn toàn trong suốt.
 * **Giao diện:** WPF ModernWpf **Light Theme** — header gradient xanh (#005DA6), so sánh version trực quan, bo góc hiện đại.
 
-### E. License Management (Quản lý License)
+### G. License Management (Quản lý License)
 * **Chức năng:** Hệ thống đăng nhập, mua license và xác thực bản quyền tích hợp trực tiếp trong Add-in.
 * **Backend:** Supabase (Auth + Postgres + Edge Functions) — hoàn toàn miễn phí.
 * **Thanh toán:** Chuyển khoản ngân hàng qua QR code SePay — tự động xác nhận bằng Webhook.

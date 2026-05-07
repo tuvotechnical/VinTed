@@ -22,6 +22,7 @@ namespace VinTed
         private ButtonDefinition _btnCopyHatch;
         private ButtonDefinition _btnExportCad;
         private ButtonDefinition _btnInsertPlus;
+        private ButtonDefinition _btnAssemblyBrowser;
         private ButtonDefinition _btnUpdate;
         private ButtonDefinition _btnAccount;
         private static string _addinFolder;
@@ -141,6 +142,31 @@ namespace VinTed
                     iconInsertLarge);
 
                 _btnInsertPlus.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(OnInsertPlus_Execute);
+
+                // Tạo ButtonDefinition cho Assembly Browser
+                stdole.IPictureDisp iconBrowserSmall = null;
+                stdole.IPictureDisp iconBrowserLarge = null;
+                try
+                {
+                    string iconPath = System.IO.Path.Combine(_addinFolder, "Assets", "browser.svg");
+                    iconBrowserSmall = IconHelper.CreateIconFromSvgFile(iconPath, 16,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                    iconBrowserLarge = IconHelper.CreateIconFromSvgFile(iconPath, 32,
+                        System.Drawing.Color.FromArgb(0, 93, 166), System.Drawing.Color.FromArgb(0, 0, 0, 0));
+                }
+                catch (Exception) { }
+
+                _btnAssemblyBrowser = ctrlDefs.AddButtonDefinition(
+                    "Assembly Browser",
+                    "VinTed_AssemblyBrowser",
+                    CommandTypesEnum.kEditMaskCmdType,
+                    "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}",
+                    "Duyệt và chọn linh kiện trong Assembly với đồng bộ hai chiều",
+                    "VinTed Assembly Browser\nHiển thị danh sách linh kiện và đồng bộ selection giữa UI và 3D model.",
+                    iconBrowserSmall,
+                    iconBrowserLarge);
+
+                _btnAssemblyBrowser.OnExecute += new ButtonDefinitionSink_OnExecuteEventHandler(OnAssemblyBrowser_Execute);
 
                 // Tạo ButtonDefinition cho Update
                 stdole.IPictureDisp iconUpdateSmall = null;
@@ -297,6 +323,7 @@ namespace VinTed
                             RibbonPanel panelAssembly = null;
                             try { panelAssembly = vinTedTab.RibbonPanels["Assembly Tools"]; }
                             catch { panelAssembly = vinTedTab.RibbonPanels.Add("Assembly Tools", "VinTed_AssemblyTools", "{D4E5F6A7-B8C9-0D1E-2F3A-4B5C6D7E8F90}"); }
+                            try { panelAssembly.CommandControls.AddButton(_btnAssemblyBrowser); } catch { }
                             try { panelAssembly.CommandControls.AddButton(_btnInsertPlus); } catch { }
                         }
                     }
@@ -377,7 +404,7 @@ namespace VinTed
 
                 DrawingDocument drawDoc = (DrawingDocument)activeDoc;
                 CopyHatch.CopyHatchWindow window = new CopyHatch.CopyHatchWindow(_invApp, drawDoc);
-                window.Show();
+                window.ShowDialog();
             }
             catch (Exception ex)
             {
@@ -467,6 +494,47 @@ namespace VinTed
 
                 AssemblyDocument asmDoc = (AssemblyDocument)activeDoc;
                 InsertPlus.InsertPlusWindow window = new InsertPlus.InsertPlusWindow(_invApp, asmDoc);
+                window.ShowDialog();
+            }
+            catch (Exception ex)
+            {
+                string msg = "Lỗi: " + ex.Message;
+                if (ex.InnerException != null)
+                {
+                    msg = msg + "\n\nInner: " + ex.InnerException.Message;
+                }
+                msg = msg + "\n\nStack: " + ex.StackTrace;
+                System.Windows.MessageBox.Show(
+                    msg,
+                    "VinTed Error",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        private void OnAssemblyBrowser_Execute(NameValueMap context)
+        {
+            try
+            {
+                Document activeDoc = _invApp.ActiveDocument;
+                if (activeDoc == null || activeDoc.DocumentType != DocumentTypeEnum.kAssemblyDocumentObject)
+                {
+                    System.Windows.MessageBox.Show(
+                        "Tính năng Assembly Browser chỉ hoạt động trong môi trường Assembly (.iam).",
+                        "VinTed",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning);
+                    return;
+                }
+
+                if (!Licensing.LicenseManager.RequireActive())
+                {
+                    ShowLicenseRequired();
+                    return;
+                }
+
+                Features.AssemblyBrowser.AssemblyBrowserWindow window = 
+                    new Features.AssemblyBrowser.AssemblyBrowserWindow(_invApp);
                 window.Show();
             }
             catch (Exception ex)
@@ -536,7 +604,7 @@ namespace VinTed
                 if (result.HasUpdate)
                 {
                     Updater.UpdateNotificationWindow win = new Updater.UpdateNotificationWindow(result);
-                    win.Show();
+                    win.ShowDialog();
                 }
                 else if (showNoUpdateMessage)
                 {
@@ -602,16 +670,16 @@ namespace VinTed
                             _uiDispatcher.BeginInvoke(new Action(delegate()
                             {
                                 Licensing.UI.AccountWindow accWin = new Licensing.UI.AccountWindow();
-                                accWin.Show();
+                                accWin.ShowDialog();
                             }));
                         });
                     };
-                    loginWin.Show();
+                    loginWin.ShowDialog();
                 }
                 else
                 {
                     Licensing.UI.AccountWindow accWin = new Licensing.UI.AccountWindow();
-                    accWin.Show();
+                    accWin.ShowDialog();
                 }
             }
             catch (Exception ex)
@@ -644,7 +712,7 @@ namespace VinTed
                             Licensing.LicenseManager.CheckLicense();
                         });
                     };
-                    loginWin.Show();
+                    loginWin.ShowDialog();
                 }
             }
             else
@@ -658,7 +726,7 @@ namespace VinTed
                 if (result == System.Windows.MessageBoxResult.Yes)
                 {
                     Licensing.UI.BuyLicenseWindow buyWin = new Licensing.UI.BuyLicenseWindow();
-                    buyWin.Show();
+                    buyWin.ShowDialog();
                 }
             }
         }

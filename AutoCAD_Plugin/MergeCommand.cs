@@ -40,7 +40,11 @@ namespace VinTed.AutoCAD
             try
             {
                 string[] lines = File.ReadAllLines(argsFile);
-                if (lines.Length < 4) return;
+                if (lines.Length < 4)
+                {
+                    ed.WriteMessage("\nError: Merge args file is invalid.");
+                    return;
+                }
 
                 pathContainingDWG = lines[0];
                 fileToSave = lines[1];
@@ -56,64 +60,48 @@ namespace VinTed.AutoCAD
                     return;
                 }
 
-                if (!CreateNewDrawingFile(fileToSave))
+                string[] files = ResolveSourceFiles(lines);
+                if (files.Length == 0)
+                {
+                    ed.WriteMessage("\nError: Không tìm thấy file DWG nguồn để gộp.");
+                    return;
+                }
+
+                if (!PrepareOutputFile(fileToSave))
                 {
                     ed.WriteMessage("\nError: Tệp đang được sử dụng " + fileToSave);
                     return;
                 }
 
-                ConfigurationTargetDrawing();
-
-                string str = string.Empty;
-                string[] files = new string[0];
-
                 using (Database targetDb = new Database(true, false))
                 {
-                    targetDb.ReadDwgFile(fileToSave, FileShare.ReadWrite, false, null);
-                    
-                    this.processedFiles = new HashSet<string>();
+                    ConfigureTargetDatabase(targetDb);
+
+                    this.processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
                     bool firstFile = true;
-                    
-                    string baseName = Path.GetFileNameWithoutExtension(fileToSave);
-                    string searchPattern = baseName + "_*.dwg";
-                    files = Directory.GetFiles(pathContainingDWG, searchPattern)
-                                     .OrderBy(f => SortedToGetFileNumber(f))
-                                     .ToArray();
-
-                    if (files.Length == 0)
-                    {
-                        files = Directory.GetFiles(pathContainingDWG, "Sheet_*.dwg")
-                                         .OrderBy(f => SortedToGetFileNumber(f))
-                                         .ToArray();
-                    }
-
-                    if (files.Length == 0)
-                    {
-                        ed.WriteMessage("\nError: Không tìm thấy các file " + searchPattern);
-                        return;
-                    }
 
                     foreach (string text in files)
                     {
-                        if (text != fileToSave && !this.processedFiles.Contains(text))
+                        if (String.IsNullOrEmpty(text)) { continue; }
+                        if (String.Equals(text, fileToSave, StringComparison.OrdinalIgnoreCase)) { continue; }
+                        if (this.processedFiles.Contains(text)) { continue; }
+
+                        if (!dwgFileProcessing(text, targetDb, firstFile))
                         {
-                            str = text;
-                            if (!dwgFileProcessing(text, targetDb, firstFile))
-                            {
-                                ed.WriteMessage("\nError: Dừng xử lý.");
-                                return;
-                            }
-                            this.processedFiles.Add(text);
-                            firstFile = false;
+                            ed.WriteMessage("\nError: Dừng xử lý.");
+                            return;
                         }
+
+                        this.processedFiles.Add(text);
+                        firstFile = false;
                     }
-                    
+
                     targetDb.SaveAs(fileToSave, DwgVersion.Current);
-                    
-                    if (deleteFileAfterMerging)
-                    {
-                        DeleteDWGfile(files);
-                    }
+                }
+
+                if (deleteFileAfterMerging)
+                {
+                    DeleteDWGfile(files);
                 }
 
                 ed.WriteMessage("\nMerge hoàn tất thành công: " + fileToSave);
@@ -131,28 +119,63 @@ namespace VinTed.AutoCAD
             }
         }
 
-        private bool ConfigurationTargetDrawing()
+        private string[] ResolveSourceFiles(string[] lines)
+        {
+            List<string> files = new List<string>();
+            for (int i = 4; i < lines.Length; i++)
+            {
+                string candidate = lines[i];
+                if (String.IsNullOrEmpty(candidate)) { continue; }
+                candidate = candidate.Trim();
+                if (File.Exists(candidate))
+                {
+                    files.Add(candidate);
+                }
+            }
+
+            if (files.Count > 0)
+            {
+                return files.OrderBy(f => SortedToGetFileNumber(f)).ToArray();
+            }
+
+            string baseName = Path.GetFileNameWithoutExtension(fileToSave);
+            string searchPattern = baseName + "_*.dwg";
+            files.AddRange(Directory.GetFiles(pathContainingDWG, searchPattern)
+                .OrderBy(f => SortedToGetFileNumber(f)));
+
+            if (files.Count == 0)
+            {
+                files.AddRange(Directory.GetFiles(pathContainingDWG, "Sheet_*.dwg")
+                    .OrderBy(f => SortedToGetFileNumber(f)));
+            }
+
+            return files.ToArray();
+        }
+
+        private bool PrepareOutputFile(string fileName)
         {
             try
             {
-                using (Database database = new Database(true, false))
+                if (File.Exists(fileName))
                 {
-                    database.ReadDwgFile(fileToSave, FileShare.ReadWrite, false, null);
-                    CreateOrUpdateTextStyle(database, "Standard", "Arial.ttf");
-                    database.Lunits = 2;
-                    database.Luprec = 0;
-                    database.Insunits = UnitsValue.Millimeters;
-                    database.Aunits = 0;
-                    database.Auprec = 0;
-                    database.SaveAs(fileToSave, DwgVersion.Current);
+                    File.Delete(fileName);
                 }
-                return true;
+                return !String.IsNullOrEmpty(fileName);
             }
-            catch (System.Exception ex)
+            catch
             {
-                Application.DocumentManager.MdiActiveDocument.Editor.WriteMessage("\nLỗi khởi tạo style: " + ex.Message);
                 return false;
             }
+        }
+
+        private void ConfigureTargetDatabase(Database database)
+        {
+            CreateOrUpdateTextStyle(database, "Standard", "Arial.ttf");
+            database.Lunits = 2;
+            database.Luprec = 0;
+            database.Insunits = UnitsValue.Millimeters;
+            database.Aunits = 0;
+            database.Auprec = 0;
         }
 
         private void DeleteDWGfile(string[] files)
@@ -177,27 +200,6 @@ namespace VinTed.AutoCAD
                 }
             }
             return 0;
-        }
-
-        private bool CreateNewDrawingFile(string fileName)
-        {
-            try
-            {
-                if (File.Exists(fileName))
-                {
-                    File.Delete(fileName);
-                }
-                if (!string.IsNullOrEmpty(fileName))
-                {
-                    using (Database database = new Database())
-                    {
-                        database.SaveAs(fileName, DwgVersion.Current);
-                    }
-                    return true;
-                }
-            }
-            catch { }
-            return false;
         }
 
         private bool dwgFileProcessing(string sourceFilename, Database targetDb, bool firstFile)

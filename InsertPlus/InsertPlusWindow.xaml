@@ -7,7 +7,7 @@
         Title="VinTed — Insert Plus"
         Width="380" SizeToContent="Height"
         WindowStartupLocation="CenterScreen"
-        Topmost="True"
+        Topmost="False"
         ResizeMode="NoResize"
         FontFamily="Segoe UI">
 
